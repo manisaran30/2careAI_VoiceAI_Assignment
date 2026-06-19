@@ -124,6 +124,26 @@ setInterval(async () => {
   }
 }, CLEANUP_INTERVAL);
 
+// Ensure appointment_slots table exists at startup
+(async () => {
+  try {
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "appointment_slots" (
+        "id" TEXT PRIMARY KEY,
+        "doctorId" TEXT NOT NULL REFERENCES "doctors"("id"),
+        "date" TIMESTAMPTZ NOT NULL,
+        "time" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'available',
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    logger.info('DB', 'appointment_slots table ready');
+  } catch (err) {
+    logger.error('DB', 'Failed to create appointment_slots table', { error: String(err) });
+  }
+})();
+
 app.listen(PORT, () => {
   logger.info('Server', `Server running on http://localhost:${PORT}`);
 });
