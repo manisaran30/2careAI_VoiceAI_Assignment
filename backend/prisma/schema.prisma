@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -12,8 +12,8 @@ model Branch {
   name      String
   address   String?
   phone     String?
-  timings   String?  // JSON: {"weekday": "08:00-20:00", "weekend": "09:00-17:00"}
-  services  String   // JSON array stringified
+  timings   String?  @db.Text  // JSON: {"weekday": "08:00-20:00", "weekend": "09:00-17:00"}
+  services  String   @db.Text  // JSON array stringified
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,11 +43,11 @@ model Doctor {
   specialty       String
   experience      Int?
   consultationFee Float?
-  languages       String  // JSON array stringified: ["English","Tamil"]
-  availableDays   String  // JSON array stringified: ["Monday","Tuesday"]
-  qualifications  String  // JSON array stringified
-  profileImage    String?
-  bio             String?
+  languages       String  @db.Text  // JSON array stringified: ["English","Tamil"]
+  availableDays   String  @db.Text  // JSON array stringified: ["Monday","Tuesday"]
+  qualifications  String  @db.Text  // JSON array stringified
+  profileImage    String? @db.Text
+  bio             String? @db.Text
   branchId        String
   branch          Branch   @relation(fields: [branchId], references: [id])
   departmentId    String
@@ -72,10 +72,10 @@ model Patient {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  appointments           Appointment[]
-  callLogs               CallLog[]
-  humanFollowups         HumanFollowup[]
-  conversationSummaries  ConversationSummary[]
+  appointments     Appointment[]
+  callLogs         CallLog[]
+  humanFollowups   HumanFollowup[]
+  conversationSummaries ConversationSummary[]
 
   @@map("patients")
 }
@@ -91,8 +91,8 @@ model Appointment {
   date       DateTime
   time       String   // "10:30"
   status     String   @default("scheduled") // scheduled, completed, cancelled, rescheduled, no_show
-  reason     String?
-  notes      String?
+  reason     String? @db.Text
+  notes      String? @db.Text
   source     String   @default("manual") // manual, ai, phone
   callLogId  String?
   createdAt  DateTime @default(now())
@@ -115,14 +115,14 @@ model CallLog {
   status         String   @default("completed") // connecting, active, processing, completed, failed, missed, incomplete
   duration       Int?     // seconds
   intent         String?
-  summary        String?
+  summary        String? @db.Text
   operation      String?  // Current operation: "checking_doctor", "booking", etc.
-  transcript     String?  // Accumulated transcript JSON stringified
+  transcript     String? @db.Text // Accumulated transcript JSON stringified
   partialSession Boolean  @default(false) // true if call disconnected unexpectedly
-  errorLog       String?  // JSON array of errors
+  errorLog       String? @db.Text // JSON array of errors
   patientId      String?
   patient        Patient? @relation(fields: [patientId], references: [id])
-  metadata       String?  // JSON string
+  metadata       String? @db.Text // JSON string
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -144,7 +144,7 @@ model CallEvent {
   callLogId String?
   callLog   CallLog? @relation(fields: [callLogId], references: [id])
   eventType String   // status_update, transcript, operation, error, summary
-  payload   String   // JSON
+  payload   String   @db.Text // JSON
   createdAt DateTime @default(now())
 
   @@index([sessionId, createdAt])
@@ -157,18 +157,26 @@ model ConversationSummary {
   callLog        CallLog  @relation(fields: [callLogId], references: [id])
   patientId      String?
   patient        Patient? @relation(fields: [patientId], references: [id])
-  patientName    String?
-  intent         String?
-  doctor         String?
-  department     String?
-  branch         String?
-  appointmentTime String?
-  outcome        String?  // booked, rescheduled, cancelled, handoff, faq, incomplete
+  patientName    String? @db.Text
+  intent         String? @db.Text
+  doctor         String? @db.Text
+  department     String? @db.Text
+  branch         String? @db.Text
+  appointmentTime String? @db.Text
+  outcome        String? @db.Text // booked, rescheduled, cancelled, handoff, faq, incomplete
   callDuration   Int?
-  summary        String?
+  summary        String? @db.Text
   createdAt      DateTime @default(now())
 
   @@map("conversation_summaries")
+}
+
+model HospitalInfo {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text // JSON
+
+  @@map("hospital_info")
 }
 
 model HumanFollowup {
@@ -178,7 +186,7 @@ model HumanFollowup {
   patientId String
   patient   Patient  @relation(fields: [patientId], references: [id])
   reason    String
-  notes     String?
+  notes     String? @db.Text
   status    String   @default("pending") // pending, contacted, resolved
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -190,8 +198,8 @@ model WebhookEvent {
   id        String   @id @default(cuid())
   callLogId String?
   callLog   CallLog? @relation(fields: [callLogId], references: [id])
-  eventType String   // call_started, call_completed, booking, execution_update, transcript, operation
-  payload   String?  // JSON string
+  eventType String   // call_started, call_completed, booking
+  payload   String? @db.Text // JSON string
   processed Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -204,17 +212,9 @@ model EvaluationResult {
   scenario      String
   passed        Boolean
   executionTime Int?     // ms
-  outcome       String?
-  details       String?  // JSON string
+  outcome       String? @db.Text
+  details       String? @db.Text // JSON string
   createdAt     DateTime @default(now())
 
   @@map("evaluation_results")
-}
-
-model HospitalInfo {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String // JSON
-
-  @@map("hospital_info")
 }
