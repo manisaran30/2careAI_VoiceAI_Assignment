@@ -88,6 +88,18 @@ router.post('/seed', async (_req: Request, res: Response) => {
   }
 });
 
+router.get('/test-recent', async (_req: Request, res: Response) => {
+  try {
+    const calls = await prisma.callLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10 });
+    const callsWithInclude = await prisma.callLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10, include: { patient: { select: { name: true, phone: true } }, conversationSummary: true } });
+    const apps = await prisma.appointment.findMany({ orderBy: { createdAt: 'desc' }, take: 10, include: { patient: { select: { name: true, phone: true } }, doctor: { select: { name: true, specialty: true } }, branch: { select: { name: true } } } });
+    const fups = await prisma.humanFollowup.findMany({ where: { status: 'pending' }, orderBy: { createdAt: 'desc' }, take: 20, include: { patient: { select: { name: true, phone: true } } } });
+    res.json({ success: true, data: { calls: calls.length, callsWithInclude: callsWithInclude.length, apps: apps.length, fups: fups.length } });
+  } catch (error) {
+    res.json({ success: false, error: String(error), stack: error instanceof Error ? error.stack : undefined });
+  }
+});
+
 router.get('/db-check', async (_req: Request, res: Response) => {
   try {
     const hasDbUrl = !!process.env.DATABASE_URL;
