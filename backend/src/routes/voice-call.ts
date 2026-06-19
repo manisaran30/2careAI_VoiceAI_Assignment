@@ -57,7 +57,7 @@ router.post('/initiate', async (req: Request, res: Response) => {
       'VoiceCall.initiate'
     );
 
-    broadcastCallEvent(sessionId, 'call.connecting', { sessionId, phone: formattedPhone });
+    try { broadcastCallEvent(sessionId, 'call.connecting', { sessionId, phone: formattedPhone }); } catch { /* ignore broadcast errors */ }
 
     // Attempt to initiate via voice provider
     try {
