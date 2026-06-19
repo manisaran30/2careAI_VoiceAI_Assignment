@@ -1,6 +1,8 @@
 import { VoiceCallUI } from "@/components/voice-call/voice-call-ui"
 import Link from "next/link"
 
+export const dynamic = "force-dynamic"
+
 export default function VoiceCallPage() {
   return (
     <div className="space-y-6">

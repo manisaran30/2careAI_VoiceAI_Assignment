@@ -1,12 +1,10 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { useCallTimer } from "@/hooks/use-call-timer"
-
 interface ActiveStateProps {
   operation: string | null
   isAiSpeaking: boolean
   isUserSpeaking: boolean
+  timer: string
   onEndCall: () => void
 }
 
@@ -37,26 +35,14 @@ function SpeakingIndicator({ label, isActive, color }: { label: string; isActive
   )
 }
 
-export function ActiveState({ operation, isAiSpeaking, isUserSpeaking, onEndCall }: ActiveStateProps) {
-  const { formatted, start, stop } = useCallTimer()
-
-  const timerStarted = useRef(false)
-  useEffect(() => {
-    if (!timerStarted.current) {
-      start()
-      timerStarted.current = true
-    }
-    return () => { stop(); timerStarted.current = false }
-  }, [start, stop])
-
+export function ActiveState({ operation, isAiSpeaking, isUserSpeaking, timer, onEndCall }: ActiveStateProps) {
   return (
     <div className="space-y-6">
-      {/* Header: duration + indicators */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Waveform />
           <div>
-            <p className="text-2xl font-mono font-bold tabular-nums">{formatted}</p>
+            <p className="text-2xl font-mono font-bold tabular-nums">{timer}</p>
             <p className="text-xs text-muted">Call duration</p>
           </div>
         </div>
@@ -66,7 +52,6 @@ export function ActiveState({ operation, isAiSpeaking, isUserSpeaking, onEndCall
         </div>
       </div>
 
-      {/* Operation status */}
       {operation && (
         <div className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
           <div className="flex items-center gap-3">
@@ -76,7 +61,6 @@ export function ActiveState({ operation, isAiSpeaking, isUserSpeaking, onEndCall
         </div>
       )}
 
-      {/* End call button */}
       <div className="flex justify-center pt-8">
         <button
           onClick={onEndCall}
@@ -89,4 +73,3 @@ export function ActiveState({ operation, isAiSpeaking, isUserSpeaking, onEndCall
     </div>
   )
 }
-

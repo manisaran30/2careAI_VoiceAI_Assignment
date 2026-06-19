@@ -17,9 +17,11 @@ import voiceCallRouter from './routes/voice-call';
 import branchesRouter from './routes/branches';
 import sseRouter from './routes/sse';
 import evaluationsRouter from './routes/evaluations';
+import slotsRouter from './routes/slots';
 import debugRouter, { recordRequest } from './routes/debug';
 import { prisma } from './prisma';
 import { configureProvider } from './voice/provider-registry';
+import { sessionManager } from './voice/session-manager';
 import { logger } from './logger';
 
 const app = express();
@@ -62,6 +64,7 @@ app.use('/api/voice-call', voiceCallRouter);
 app.use('/api/branches', branchesRouter);
 app.use('/api/events', sseRouter);
 app.use('/api/evaluations', evaluationsRouter);
+app.use('/api/slots', slotsRouter);
 app.use('/api/debug', debugRouter);
 
 // Global error handler — never expose raw errors to client
@@ -71,10 +74,17 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 });
 
 // Periodic cleanup: mark sessions stuck in active/connecting for >5min as incomplete
-const CLEANUP_INTERVAL = 60_000; // every 60s
-const STALE_THRESHOLD = 5 * 60_000; // 5 minutes
+const CLEANUP_INTERVAL = 60_000;
+const STALE_THRESHOLD = 5 * 60_000;
 setInterval(async () => {
   try {
+    // Clean in-memory stale sessions
+    const cleaned = sessionManager.cleanup();
+    if (cleaned > 0) {
+      logger.info('SessionCleanup', `Cleaned ${cleaned} stale sessions from memory`);
+    }
+
+    // Mark DB sessions stuck in active/connecting for >5min as incomplete
     const cutoff = new Date(Date.now() - STALE_THRESHOLD);
     const stale = await prisma.callLog.updateMany({
       where: {
@@ -84,7 +94,30 @@ setInterval(async () => {
       data: { status: 'incomplete', partialSession: true },
     });
     if (stale.count > 0) {
-      logger.info('SessionCleanup', `Marked ${stale.count} stale sessions as incomplete`);
+      logger.info('SessionCleanup', `Marked ${stale.count} stale DB sessions as incomplete`);
+
+      // Also disconnect in-memory sessions that match stale records
+      const staleRecords = await prisma.callLog.findMany({
+        where: {
+          status: 'incomplete',
+          partialSession: true,
+          updatedAt: { lt: cutoff },
+        },
+        select: { sessionId: true },
+      });
+      for (const record of staleRecords) {
+        if (!record.sessionId) continue;
+        try {
+          const s = sessionManager.getSession(record.sessionId);
+          if (s && !['completed', 'disconnected', 'idle'].includes(s.state)) {
+            sessionManager.transition(record.sessionId, 'disconnected', {
+              terminationReason: 'stale_timeout',
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
     }
   } catch (err) {
     logger.error('SessionCleanup', 'Cleanup failed', { error: String(err) });

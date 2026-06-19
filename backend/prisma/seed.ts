@@ -107,10 +107,42 @@ async function main() {
   }
   console.log(`Created ${doctorsData.length} doctors`);
 
+  // Generate appointment slots for next 14 days
+  const slotTimes = ['10:00', '11:00', '14:00', '15:00', '16:00'];
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  let totalSlots = 0;
+
+  const allDoctors = await prisma.doctor.findMany();
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  for (let dayOffset = 0; dayOffset < 14; dayOffset++) {
+    const dateObj = new Date(today);
+    dateObj.setUTCDate(dateObj.getUTCDate() + dayOffset);
+    const dayOfWeek = dayNames[dateObj.getUTCDay()];
+
+    for (const doc of allDoctors) {
+      if (!doc.availableDays.includes(dayOfWeek)) continue;
+
+      const slotData = slotTimes.map((time) => ({
+        doctorId: doc.id,
+        date: dateObj,
+        time,
+        status: 'available' as const,
+      }));
+
+      await prisma.appointmentSlot.createMany({ data: slotData });
+      totalSlots += slotData.length;
+    }
+  }
+
+  console.log(`Generated ${totalSlots} appointment slots across ${allDoctors.length} doctors`);
+
   console.log('\n✅ Seed completed successfully!');
   console.log(`  ${branches.length} branches`);
   console.log(`  ${departments.length} departments`);
   console.log(`  ${doctorsData.length} doctors`);
+  console.log(`  ${totalSlots} slots (14 days)`);
 }
 
 main()

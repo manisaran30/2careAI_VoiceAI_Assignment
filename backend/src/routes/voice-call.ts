@@ -2,7 +2,8 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { getProvider } from '../voice/provider-registry';
 import { CallParams } from '../voice/provider';
-import { broadcastToSession } from './sse';
+import { sessionManager, SessionData, ConversationSummaryData } from '../voice/session-manager';
+import { broadcast } from './sse';
 import { withRetry } from '../middleware/retry';
 import { logger } from '../logger';
 import crypto from 'crypto';
@@ -11,10 +12,6 @@ const router = Router();
 
 function generateSessionId(): string {
   return `sess_${crypto.randomUUID().slice(0, 8)}_${Date.now().toString(36)}`;
-}
-
-function broadcastCallEvent(sessionId: string, eventType: string, payload: unknown): void {
-  broadcastToSession(sessionId, eventType, payload);
 }
 
 // POST /api/voice-call/initiate — Create a call session
@@ -31,6 +28,11 @@ router.post('/initiate', async (req: Request, res: Response) => {
       formattedPhone = '+91' + formattedPhone;
     }
 
+    const existingActive = sessionManager.hasActiveSession();
+    if (existingActive) {
+      return res.status(409).json({ error: 'An active session already exists', activeSessionId: existingActive });
+    }
+
     const sessionId = generateSessionId();
     logger.info('VoiceCall.initiate', `Creating session ${sessionId} for ${formattedPhone}`);
 
@@ -42,7 +44,11 @@ router.post('/initiate', async (req: Request, res: Response) => {
       });
     }
 
-    // Create call log with connecting status
+    // Create session in state machine
+    const session = sessionManager.createSession(sessionId, formattedPhone);
+    sessionManager.transition(sessionId, 'connecting');
+
+    // Create call log
     const callLog = await withRetry(() =>
       prisma.callLog.create({
         data: {
@@ -57,14 +63,17 @@ router.post('/initiate', async (req: Request, res: Response) => {
       'VoiceCall.initiate'
     );
 
-    try { broadcastCallEvent(sessionId, 'call.connecting', { sessionId, phone: formattedPhone }); } catch { /* ignore broadcast errors */ }
+    sessionManager.transition(sessionId, 'connecting', {
+      callLogId: callLog.id,
+      patientId: patient!.id,
+    });
 
     // Attempt to initiate via voice provider
     try {
       const provider = getProvider();
       const callParams: CallParams = { recipientPhone: formattedPhone };
       if (fromPhone) callParams.fromPhone = fromPhone;
-      callParams.userData = { sessionId, patientId: patient.id };
+      callParams.userData = { sessionId, patientId: patient!.id };
 
       const result = await provider.initiateCall(callParams);
 
@@ -76,10 +85,8 @@ router.post('/initiate', async (req: Request, res: Response) => {
         'VoiceCall.initiate'
       );
 
-      broadcastCallEvent(sessionId, 'call.active', {
-        sessionId,
+      sessionManager.transition(sessionId, 'connected', {
         executionId: result.executionId,
-        status: result.status,
       });
 
       logger.info('VoiceCall.initiate', `Call active for session ${sessionId}`, {
@@ -92,12 +99,10 @@ router.post('/initiate', async (req: Request, res: Response) => {
           sessionId,
           callLogId: callLog.id,
           executionId: result.executionId,
-          status: 'active',
+          status: 'connected',
         },
       });
     } catch (providerErr) {
-      // Provider failed — mark as failed but return session for error recovery
-      // Wrap in extra try-catch so even if DB/SSE fails, we return a clean response
       try {
         await withRetry(() =>
           prisma.callLog.update({
@@ -107,17 +112,13 @@ router.post('/initiate', async (req: Request, res: Response) => {
           'VoiceCall.initiate.error'
         ).catch(() => {});
       } catch {
-        // ignore DB update errors — session still usable
+        // ignore
       }
 
-      try {
-        broadcastCallEvent(sessionId, 'call.error', {
-          sessionId,
-          message: 'Unable to connect the call. Please try again.',
-        });
-      } catch {
-        // ignore broadcast errors
-      }
+      sessionManager.transition(sessionId, 'disconnected', {
+        terminationReason: 'Provider initiation failed',
+        errorLog: [String(providerErr)],
+      });
 
       logger.error('VoiceCall.initiate', `Provider error for session ${sessionId}`, {
         error: String(providerErr),
@@ -139,52 +140,104 @@ router.post('/initiate', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/voice-call/:sessionId/end — End an active call
+// POST /api/voice-call/:sessionId/end — End an active call (user-initiated)
 router.post('/:sessionId/end', async (req: Request, res: Response) => {
   const { sessionId } = req.params;
 
   try {
-    logger.info('VoiceCall.end', `Ending session ${sessionId}`);
+    logger.info('VoiceCall.end', `User ending session ${sessionId}`);
 
-    const callLog = await withRetry(() =>
-      prisma.callLog.findFirst({ where: { sessionId } }),
-      'VoiceCall.end'
-    );
-
-    if (!callLog) {
+    const session = sessionManager.getSession(sessionId);
+    if (!session) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    // Try to end via provider if active
-    if (callLog.status === 'active' && callLog.callId !== callLog.sessionId) {
+    if (['completed', 'disconnected', 'idle'].includes(session.state)) {
+      return res.json({ success: true, data: { sessionId, status: session.state } });
+    }
+
+    sessionManager.transition(sessionId, 'ending', {
+      terminationReason: 'user_ended',
+    });
+
+    // End via provider
+    if (session.executionId) {
       try {
         const provider = getProvider();
-        await provider.endCall(callLog.callId);
+        await provider.endCall(session.executionId);
       } catch (providerErr) {
-        logger.warn('VoiceCall.end', 'Provider endCall failed (call may already be done)', {
+        logger.warn('VoiceCall.end', 'Provider endCall failed', {
           error: String(providerErr),
         });
       }
     }
 
-    await withRetry(() =>
-      prisma.callLog.update({
-        where: { id: callLog.id },
-        data: { status: 'completed' },
-      }),
-      'VoiceCall.end'
-    );
+    // Update DB
+    const callLog = await prisma.callLog.findFirst({ where: { sessionId } });
+    if (callLog) {
+      await withRetry(() =>
+        prisma.callLog.update({
+          where: { id: callLog.id },
+          data: {
+            status: 'completed',
+            duration: session.startTime ? Math.floor((Date.now() - session.startTime) / 1000) : null,
+          },
+        }),
+        'VoiceCall.end'
+      ).catch(() => {});
+    }
 
-    broadcastCallEvent(sessionId, 'call.completed', { sessionId });
+    // Fetch final session data from DB for summary
+    let summaryData: ConversationSummaryData | null = null;
+    if (callLog) {
+      const fullData = await prisma.callLog.findFirst({
+        where: { sessionId },
+        include: { conversationSummary: true },
+      }).catch(() => null);
 
-    res.json({ success: true, data: { sessionId, status: 'completed' } });
+      if (fullData?.conversationSummary) {
+        const cs = fullData.conversationSummary;
+        summaryData = {
+          patientName: cs.patientName,
+          intent: cs.intent,
+          doctor: cs.doctor,
+          department: cs.department,
+          branch: cs.branch,
+          appointmentTime: cs.appointmentTime,
+          outcome: cs.outcome,
+          callDuration: cs.callDuration,
+          summary: cs.summary,
+        };
+      }
+    }
+
+    sessionManager.transition(sessionId, 'completed', {
+      endTime: Date.now(),
+      terminationReason: 'user_ended',
+      summary: summaryData,
+    });
+
+    // Broadcast to dashboard
+    broadcast('dashboard', 'call.completed', {
+      sessionId,
+      outcome: summaryData?.outcome || 'completed',
+    });
+
+    res.json({
+      success: true,
+      data: {
+        sessionId,
+        status: 'completed',
+        summary: summaryData,
+      },
+    });
   } catch (error) {
     logger.error('VoiceCall.end', `Failed to end session ${sessionId}`, { error: String(error) });
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
   }
 });
 
-// GET /api/voice-call/:sessionId — Get session details
+// GET /api/voice-call/:sessionId — Get session details from DB + session manager state
 router.get('/:sessionId', async (req: Request, res: Response) => {
   const { sessionId } = req.params;
 
@@ -208,14 +261,22 @@ router.get('/:sessionId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    res.json({ success: true, data: callLog });
+    const liveState = sessionManager.toJSON(sessionId);
+
+    res.json({
+      success: true,
+      data: {
+        ...callLog,
+        liveState,
+      },
+    });
   } catch (error) {
     logger.error('VoiceCall.get', `Failed to get session ${sessionId}`, { error: String(error) });
     res.status(500).json({ error: 'Something went wrong.' });
   }
 });
 
-// POST /api/voice-call/callback-request — Queue a human callback (no call needed)
+// POST /api/voice-call/callback-request — Queue a human callback
 router.post('/callback-request', async (req: Request, res: Response) => {
   try {
     const { phone, name, reason } = req.body;
@@ -247,11 +308,7 @@ router.post('/callback-request', async (req: Request, res: Response) => {
       },
     });
 
-    logger.info('VoiceCall.callback', 'Callback requested', {
-      phone: formattedPhone,
-      reason,
-      followupId: followup.id,
-    });
+    logger.info('VoiceCall.callback', 'Callback requested', { phone: formattedPhone, reason, followupId: followup.id });
 
     res.status(201).json({ success: true, data: followup });
   } catch (error) {
@@ -260,7 +317,7 @@ router.post('/callback-request', async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/voice-call — List all sessions
+// GET /api/voice-call — List recent sessions
 router.get('/', async (_req: Request, res: Response) => {
   try {
     const sessions = await prisma.callLog.findMany({
@@ -273,7 +330,12 @@ router.get('/', async (_req: Request, res: Response) => {
       },
     });
 
-    res.json({ success: true, data: sessions });
+    const enrichedSessions = sessions.map((s) => {
+      const liveState = s.sessionId ? sessionManager.toJSON(s.sessionId) : null;
+      return { ...s, liveState };
+    });
+
+    res.json({ success: true, data: enrichedSessions });
   } catch (error) {
     logger.error('VoiceCall.list', 'Failed to list sessions', { error: String(error) });
     res.status(500).json({ error: 'Something went wrong.' });

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { broadcast, broadcastToSession } from './sse';
+import { sessionManager } from '../voice/session-manager';
 import { withRetry } from '../middleware/retry';
 import { logger } from '../logger';
 
@@ -15,16 +16,31 @@ function safeJsonParse(str: string | null | undefined): unknown {
   }
 }
 
+function resolveSessionId(callId: string, bodySessionId?: string): string | null {
+  if (bodySessionId) {
+    const existing = sessionManager.getSession(bodySessionId);
+    if (existing) return bodySessionId;
+  }
+
+  // Try to find by callLog
+  const allSessions = sessionManager.getAllActiveSessions();
+  for (const s of allSessions) {
+    if (s.executionId === callId) return s.sessionId;
+  }
+
+  return bodySessionId || null;
+}
+
 // POST /api/webhooks/bolna/call-started — Bolna call started event
 router.post('/bolna/call-started', async (req: Request, res: Response) => {
   try {
-    const { callId, phone, direction, sessionId } = req.body;
+    const { callId, phone, direction, sessionId: bodySessionId } = req.body;
 
     if (!callId || !phone) {
       return res.status(400).json({ error: 'callId and phone are required' });
     }
 
-    const logSessionId = sessionId || `bolna_${callId}`;
+    const logSessionId = bodySessionId || resolveSessionId(callId) || `bolna_${callId}`;
 
     let patient = await prisma.patient.findUnique({ where: { phone } });
     if (!patient) {
@@ -33,9 +49,14 @@ router.post('/bolna/call-started', async (req: Request, res: Response) => {
       });
     }
 
-    // Find existing call log or create new one
     let callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
-    if (!callLog) {
+
+    if (callLog) {
+      callLog = await prisma.callLog.update({
+        where: { callId },
+        data: { status: 'active', sessionId: logSessionId },
+      });
+    } else {
       callLog = await prisma.callLog.create({
         data: {
           callId,
@@ -46,10 +67,22 @@ router.post('/bolna/call-started', async (req: Request, res: Response) => {
           patientId: patient.id,
         },
       });
+    }
+
+    // Create or update session in manager
+    let session = sessionManager.getSession(logSessionId);
+    if (session) {
+      sessionManager.transition(logSessionId, 'connected', {
+        executionId: callId,
+        callLogId: callLog.id,
+        patientId: patient.id,
+      });
     } else {
-      callLog = await prisma.callLog.update({
-        where: { callId },
-        data: { status: 'active', sessionId: logSessionId },
+      session = sessionManager.createSession(logSessionId, phone);
+      sessionManager.transition(logSessionId, 'connected', {
+        executionId: callId,
+        callLogId: callLog.id,
+        patientId: patient.id,
       });
     }
 
@@ -62,11 +95,6 @@ router.post('/bolna/call-started', async (req: Request, res: Response) => {
       },
     });
 
-    broadcastToSession(logSessionId, 'call.active', {
-      sessionId: logSessionId,
-      executionId: callId,
-      phone,
-    });
     broadcast('dashboard', 'call.started', { sessionId: logSessionId, status: 'active' });
 
     res.status(201).json({ success: true, data: { callLogId: callLog.id } });
@@ -81,7 +109,7 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
   try {
     const {
       callId, duration, intent, summary, patientName,
-      doctor, department, branch, appointmentTime, outcome, sessionId,
+      doctor, department, branch, appointmentTime, outcome, sessionId: bodySessionId,
     } = req.body;
 
     if (!callId) {
@@ -93,8 +121,9 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Call log not found' });
     }
 
-    const logSessionId = sessionId || callLog.sessionId || callId;
+    const logSessionId = bodySessionId || callLog.sessionId || callId;
 
+    // Update call log
     await withRetry(() =>
       prisma.callLog.update({
         where: { callId },
@@ -133,7 +162,7 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
         data: summaryData,
       });
     } else {
-      await prisma.conversationSummary.create({ data: summaryData });
+      await prisma.conversationSummary.create({ data: summaryData as any });
     }
 
     await prisma.webhookEvent.create({
@@ -145,10 +174,40 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
       },
     });
 
-    broadcastToSession(logSessionId, 'call.completed', {
-      sessionId: logSessionId,
-      summary: summaryData,
-    });
+    // Update session manager — transition through ending to completed
+    const session = sessionManager.getSession(logSessionId);
+    if (session && !['completed', 'disconnected', 'idle'].includes(session.state)) {
+      const currentState = session.state;
+      if (currentState !== 'ending') {
+        sessionManager.transition(logSessionId, 'ending', {
+          terminationReason: 'agent_ended',
+        });
+      }
+      sessionManager.transition(logSessionId, 'completed', {
+        endTime: Date.now(),
+        terminationReason: 'agent_ended',
+        summary: {
+          patientName: patientName || null,
+          intent: intent || null,
+          doctor: doctor || null,
+          department: department || null,
+          branch: branch || null,
+          appointmentTime: appointmentTime || null,
+          outcome: outcome || null,
+          callDuration: duration || null,
+          summary: summary || null,
+        },
+      });
+    } else {
+      // Session not in memory — broadcast completed directly
+      broadcastToSession(logSessionId, 'call.completed', {
+        sessionId: logSessionId,
+        state: 'completed',
+        terminationReason: 'agent_ended',
+        summary: summaryData,
+      });
+    }
+
     broadcast('dashboard', 'call.completed', { sessionId: logSessionId, outcome });
 
     res.json({ success: true });
@@ -158,10 +217,10 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/webhooks/bolna/booking — Bolna booking result
+// POST /api/webhooks/bolna/booking — Booking event
 router.post('/bolna/booking', async (req: Request, res: Response) => {
   try {
-    const { callId, action, appointmentId, sessionId } = req.body;
+    const { callId, action, appointmentId, sessionId: bodySessionId } = req.body;
 
     if (!callId) {
       return res.status(400).json({ error: 'callId is required' });
@@ -172,7 +231,7 @@ router.post('/bolna/booking', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Call log not found' });
     }
 
-    const logSessionId = sessionId || callLog.sessionId || callId;
+    const logSessionId = bodySessionId || callLog.sessionId || callId;
 
     await prisma.webhookEvent.create({
       data: {
@@ -197,18 +256,22 @@ router.post('/bolna/booking', async (req: Request, res: Response) => {
         },
       });
 
-      broadcastToSession(logSessionId, 'call.booking', {
-        sessionId: logSessionId,
-        action,
-        appointment,
-      });
+      if (appointment) {
+        sessionManager.addAppointment(logSessionId, {
+          id: appointment.id,
+          doctor: appointment.doctor || undefined,
+          branch: appointment.branch || undefined,
+          date: appointment.date?.toISOString(),
+          time: appointment.time || undefined,
+          status: appointment.status,
+        });
+      }
+
       broadcast('dashboard', 'call.booking', { action, appointment });
     }
 
-    broadcastToSession(logSessionId, 'call.operation', {
-      sessionId: logSessionId,
-      operation: action === 'created' ? 'Booking confirmed' : 'Booking updated',
-    });
+    // Update operation
+    sessionManager.setOperation(logSessionId, action === 'created' ? 'Booking confirmed' : 'Booking updated');
 
     res.json({ success: true });
   } catch (error) {
@@ -217,7 +280,7 @@ router.post('/bolna/booking', async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/webhooks/bolna/execution-update — Real-time execution status updates
+// POST /api/webhooks/bolna/execution-update — Execution status update
 router.post('/bolna/execution-update', async (req: Request, res: Response) => {
   try {
     const { execution_id, status, call_id, sessionId: bodySessionId } = req.body;
@@ -230,7 +293,41 @@ router.post('/bolna/execution-update', async (req: Request, res: Response) => {
     const callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
     const logSessionId = bodySessionId || callLog?.sessionId || callId;
 
-    // Update call log status
+    // Update session manager
+    const session = sessionManager.getSession(logSessionId);
+    if (session) {
+      switch (status) {
+        case 'in-progress':
+          if (session.state === 'connecting') {
+            sessionManager.transition(logSessionId, 'connected', { executionId: callId });
+          }
+          break;
+        case 'completed':
+          if (!['completed', 'disconnected', 'idle'].includes(session.state)) {
+            sessionManager.transition(logSessionId, 'ending', { terminationReason: 'agent_ended' });
+            sessionManager.transition(logSessionId, 'completed', {
+              endTime: Date.now(),
+              terminationReason: 'agent_ended',
+            });
+          }
+          break;
+        case 'failed':
+          if (!['completed', 'disconnected'].includes(session.state)) {
+            sessionManager.transition(logSessionId, 'disconnected', {
+              terminationReason: 'provider_failure',
+              errorLog: [`Execution failed: ${status}`],
+            });
+          }
+          break;
+        case 'queued':
+          if (session.state === 'idle') {
+            sessionManager.transition(logSessionId, 'connecting');
+          }
+          break;
+      }
+    }
+
+    // Update call log
     if (callLog) {
       const mappedStatus = status === 'in-progress' ? 'active'
         : status === 'completed' ? 'completed'
@@ -257,18 +354,6 @@ router.post('/bolna/execution-update', async (req: Request, res: Response) => {
       },
     });
 
-    // Broadcast to session
-    const eventType = status === 'completed' ? 'call.completed'
-      : status === 'in-progress' ? 'call.active'
-      : status === 'failed' ? 'call.error'
-      : 'call.status';
-
-    broadcastToSession(logSessionId, eventType, {
-      sessionId: logSessionId,
-      status,
-      duration: req.body.duration,
-    });
-
     res.json({ success: true });
   } catch (error) {
     logger.error('Webhooks.execution-update', 'Error processing', { error: String(error) });
@@ -288,6 +373,37 @@ router.post('/bolna/transcript', async (req: Request, res: Response) => {
     const callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
     const logSessionId = bodySessionId || callLog?.sessionId || callId;
 
+    // Update session manager with transcript and speaker state
+    try {
+      const entry = {
+        speaker: speaker || 'unknown',
+        text,
+        timestamp: new Date().toISOString(),
+      };
+
+      sessionManager.appendTranscript(logSessionId, entry);
+
+      // Update speaker state
+      if (speaker === 'ai') {
+        const s = sessionManager.getSession(logSessionId);
+        if (s && s.state !== 'ai_speaking' && ['connected', 'user_speaking', 'processing'].includes(s.state)) {
+          sessionManager.transition(logSessionId, 'ai_speaking');
+        }
+      } else if (speaker === 'user') {
+        const s = sessionManager.getSession(logSessionId);
+        if (s && s.state !== 'user_speaking' && ['connected', 'ai_speaking', 'processing'].includes(s.state)) {
+          sessionManager.transition(logSessionId, 'user_speaking');
+        }
+      }
+    } catch {
+      // Session may not exist in memory — broadcast directly
+      broadcastToSession(logSessionId, 'call.transcript', {
+        sessionId: logSessionId,
+        speaker,
+        text,
+      });
+    }
+
     // Accumulate transcript on call log
     if (callLog) {
       const existingTranscript = safeJsonParse(callLog.transcript) as Array<unknown> || [];
@@ -304,10 +420,10 @@ router.post('/bolna/transcript', async (req: Request, res: Response) => {
       await prisma.callLog.update({
         where: { id: callLog.id },
         data: { transcript: JSON.stringify(existingTranscript) },
-      });
+      }).catch(() => {});
     }
 
-    // Store as call event for replay
+    // Store as call event
     await prisma.callEvent.create({
       data: {
         sessionId: logSessionId,
@@ -315,12 +431,6 @@ router.post('/bolna/transcript', async (req: Request, res: Response) => {
         eventType: 'transcript',
         payload: JSON.stringify({ speaker, text }),
       },
-    });
-
-    broadcastToSession(logSessionId, 'call.transcript', {
-      sessionId: logSessionId,
-      speaker,
-      text,
     });
 
     res.json({ success: true });
@@ -342,11 +452,26 @@ router.post('/bolna/operation', async (req: Request, res: Response) => {
     const callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
     const logSessionId = bodySessionId || callLog?.sessionId || callId;
 
+    // Update session manager
+    try {
+      sessionManager.setOperation(logSessionId, operation);
+      const s = sessionManager.getSession(logSessionId);
+      if (s && !['processing', 'ending', 'disconnected'].includes(s.state)) {
+        sessionManager.transition(logSessionId, 'processing');
+      }
+    } catch {
+      broadcastToSession(logSessionId, 'call.operation', {
+        sessionId: logSessionId,
+        operation,
+      });
+    }
+
+    // Update DB
     if (callLog) {
       await prisma.callLog.update({
         where: { id: callLog.id },
         data: { operation },
-      });
+      }).catch(() => {});
     }
 
     await prisma.callEvent.create({
@@ -356,11 +481,6 @@ router.post('/bolna/operation', async (req: Request, res: Response) => {
         eventType: 'operation',
         payload: JSON.stringify({ operation }),
       },
-    });
-
-    broadcastToSession(logSessionId, 'call.operation', {
-      sessionId: logSessionId,
-      operation,
     });
 
     res.json({ success: true });

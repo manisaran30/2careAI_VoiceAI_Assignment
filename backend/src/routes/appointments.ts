@@ -117,24 +117,25 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'patientId, doctorId, branchId, date, and time are required' });
     }
 
-    // Check slot availability
+    // Check slot availability via AppointmentSlot
     const dateObj = new Date(date);
     const startDate = new Date(dateObj);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
     endDate.setDate(endDate.getDate() + 1);
 
-    const existing = await prisma.appointment.findFirst({
+    // Find an available slot in the database
+    const slot = await prisma.appointmentSlot.findFirst({
       where: {
         doctorId,
-        time,
         date: { gte: startDate, lt: endDate },
-        status: { notIn: ['cancelled'] },
+        time,
+        status: 'available',
       },
     });
 
-    if (existing) {
-      return res.status(409).json({ error: 'Slot is already booked' });
+    if (!slot) {
+      return res.status(409).json({ error: 'Slot is not available. Please check availability first.' });
     }
 
     // Verify related entities exist
@@ -148,23 +149,38 @@ router.post('/', async (req: Request, res: Response) => {
     if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
     if (!branch) return res.status(404).json({ error: 'Branch not found' });
 
-    const appointment = await prisma.appointment.create({
-      data: {
-        patientId,
-        doctorId,
-        branchId,
-        date: dateObj,
-        time,
-        reason: reason || null,
-        source: source || 'ai',
-        callLogId: callLogId || null,
-        status: 'scheduled',
-      },
-      include: {
-        patient: { select: { name: true, phone: true } },
-        doctor: { select: { name: true, specialty: true } },
-        branch: { select: { name: true } },
-      },
+    // Create appointment and mark slot as booked (atomic via transaction)
+    const [appointment] = await prisma.$transaction([
+      prisma.appointment.create({
+        data: {
+          patientId,
+          doctorId,
+          branchId,
+          date: dateObj,
+          time,
+          reason: reason || null,
+          source: source || 'ai',
+          callLogId: callLogId || null,
+          status: 'scheduled',
+        },
+        include: {
+          patient: { select: { name: true, phone: true } },
+          doctor: { select: { name: true, specialty: true } },
+          branch: { select: { name: true } },
+        },
+      }),
+      prisma.appointmentSlot.update({
+        where: { id: slot.id },
+        data: { status: 'booked' },
+      }),
+    ]);
+
+    logger.info('Appointments.create', 'Appointment created and slot booked', {
+      appointmentId: appointment.id,
+      doctorId,
+      date,
+      time,
+      slotId: slot.id,
     });
 
     res.status(201).json({ success: true, data: appointment });
