@@ -88,6 +88,23 @@ router.post('/seed', async (_req: Request, res: Response) => {
   }
 });
 
+router.post('/test-initiate', async (_req: Request, res: Response) => {
+  try {
+    const phone = '+919999999991';
+    let patient = await prisma.patient.findUnique({ where: { phone } });
+    if (!patient) {
+      patient = await prisma.patient.create({ data: { name: 'Test', phone } });
+    }
+    const sessionId = `test_${Date.now()}`;
+    const callLog = await prisma.callLog.create({
+      data: { callId: sessionId, sessionId, phone, direction: 'outbound', status: 'connecting', patientId: patient.id },
+    });
+    res.json({ success: true, data: { sessionId, callLogId: callLog.id } });
+  } catch (error) {
+    res.json({ success: false, error: String(error), stack: error instanceof Error ? error.stack : undefined });
+  }
+});
+
 router.post('/migrate', async (_req: Request, res: Response) => {
   try {
     const results: string[] = [];
