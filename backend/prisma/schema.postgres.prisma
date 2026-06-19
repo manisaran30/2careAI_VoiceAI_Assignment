@@ -107,27 +107,48 @@ model Appointment {
 }
 
 model CallLog {
-  id         String   @id @default(cuid())
-  callId     String   @unique // Bolna call ID
-  phone      String
-  direction  String   @default("inbound")
-  status     String   @default("completed") // completed, failed, missed
-  duration   Int?     // seconds
-  intent     String?
-  summary    String? @db.Text
-  patientId  String?
-  patient    Patient? @relation(fields: [patientId], references: [id])
-  metadata   String? @db.Text // JSON string
-  createdAt  DateTime @default(now())
+  id             String   @id @default(cuid())
+  callId         String   @unique // Bolna call ID
+  sessionId      String?  // Unique session identifier for frontend tracking
+  phone          String
+  direction      String   @default("inbound")
+  status         String   @default("completed") // connecting, active, processing, completed, failed, missed, incomplete
+  duration       Int?     // seconds
+  intent         String?
+  summary        String? @db.Text
+  operation      String?  // Current operation: "checking_doctor", "booking", etc.
+  transcript     String? @db.Text // Accumulated transcript JSON stringified
+  partialSession Boolean  @default(false) // true if call disconnected unexpectedly
+  errorLog       String? @db.Text // JSON array of errors
+  patientId      String?
+  patient        Patient? @relation(fields: [patientId], references: [id])
+  metadata       String? @db.Text // JSON string
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   appointments        Appointment[]
   conversationSummary ConversationSummary?
   humanFollowups      HumanFollowup[]
   webhookEvents       WebhookEvent[]
+  callEvents          CallEvent[]
 
+  @@index([sessionId])
   @@index([phone])
   @@index([createdAt])
   @@map("call_logs")
+}
+
+model CallEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  callLogId String?
+  callLog   CallLog? @relation(fields: [callLogId], references: [id])
+  eventType String   // status_update, transcript, operation, error, summary
+  payload   String   @db.Text // JSON
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("call_events")
 }
 
 model ConversationSummary {
@@ -142,12 +163,20 @@ model ConversationSummary {
   department     String? @db.Text
   branch         String? @db.Text
   appointmentTime String? @db.Text
-  outcome        String? @db.Text // booked, rescheduled, cancelled, handoff, faq
+  outcome        String? @db.Text // booked, rescheduled, cancelled, handoff, faq, incomplete
   callDuration   Int?
   summary        String? @db.Text
   createdAt      DateTime @default(now())
 
   @@map("conversation_summaries")
+}
+
+model HospitalInfo {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text // JSON
+
+  @@map("hospital_info")
 }
 
 model HumanFollowup {

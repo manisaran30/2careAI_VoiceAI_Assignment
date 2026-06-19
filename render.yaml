@@ -1,12 +1,21 @@
 services:
   - type: web
-    name: healthcare-ai-backend
+    name: apollo-ai-backend
     runtime: node
-    repo: https://github.com/YOUR_USER/YOUR_REPO
-    buildCommand: cd backend && npm install && npx prisma generate && npx tsc
-    startCommand: cd backend && node dist/index.js
+    repo: https://github.com/manisaran30/2careAI_VoiceAI_Assignment
+    buildCommand: cd backend && cp prisma/schema.postgres.prisma prisma/schema.prisma && npm install && npm run build && npx prisma generate && npx prisma db push && npx prisma db seed
+    startCommand: cd backend && npm start
+    healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: BOLNA_API_KEY
+        sync: false
+      - key: BOLNA_AGENT_ID
+        sync: false
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 4000
