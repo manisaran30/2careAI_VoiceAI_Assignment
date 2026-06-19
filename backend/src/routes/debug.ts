@@ -88,6 +88,21 @@ router.post('/seed', async (_req: Request, res: Response) => {
   }
 });
 
+router.post('/migrate', async (_req: Request, res: Response) => {
+  try {
+    const results: string[] = [];
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "sessionId" TEXT`).then(() => 'Added sessionId').catch(e => 'sessionId: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "operation" TEXT`).then(() => 'Added operation').catch(e => 'operation: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "transcript" TEXT`).then(() => 'Added transcript').catch(e => 'transcript: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "partialSession" BOOLEAN DEFAULT false`).then(() => 'Added partialSession').catch(e => 'partialSession: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "errorLog" TEXT`).then(() => 'Added errorLog').catch(e => 'errorLog: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "updatedAt" TIMESTAMP`).then(() => 'Added updatedAt').catch(e => 'updatedAt: ' + e.message));
+    res.json({ success: true, data: results });
+  } catch (error) {
+    res.json({ success: false, error: String(error) });
+  }
+});
+
 router.get('/test-recent', async (_req: Request, res: Response) => {
   try {
     const calls = await prisma.callLog.findMany({ orderBy: { createdAt: 'desc' }, take: 10 });
