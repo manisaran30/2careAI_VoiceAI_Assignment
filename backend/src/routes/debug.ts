@@ -108,12 +108,17 @@ router.post('/test-initiate', async (_req: Request, res: Response) => {
 router.post('/migrate', async (_req: Request, res: Response) => {
   try {
     const results: string[] = [];
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "sessionId" TEXT`).then(() => 'Added sessionId').catch(e => 'sessionId: ' + e.message));
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "operation" TEXT`).then(() => 'Added operation').catch(e => 'operation: ' + e.message));
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "transcript" TEXT`).then(() => 'Added transcript').catch(e => 'transcript: ' + e.message));
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "partialSession" BOOLEAN DEFAULT false`).then(() => 'Added partialSession').catch(e => 'partialSession: ' + e.message));
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "errorLog" TEXT`).then(() => 'Added errorLog').catch(e => 'errorLog: ' + e.message));
-    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN "updatedAt" TIMESTAMP`).then(() => 'Added updatedAt').catch(e => 'updatedAt: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "sessionId" TEXT`).then(() => 'sessionId OK').catch(e => 'sessionId: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "operation" TEXT`).then(() => 'operation OK').catch(e => 'operation: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "transcript" TEXT`).then(() => 'transcript OK').catch(e => 'transcript: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "partialSession" BOOLEAN DEFAULT false`).then(() => 'partialSession OK').catch(e => 'partialSession: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "errorLog" TEXT`).then(() => 'errorLog OK').catch(e => 'errorLog: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`ALTER TABLE call_logs ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMPTZ`).then(() => 'updatedAt OK').catch(e => 'updatedAt: ' + e.message));
+    // Also add other missing CallEvent & ConversationSummary tables
+    results.push(await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS call_events ("id" TEXT PRIMARY KEY, "sessionId" TEXT NOT NULL, "callLogId" TEXT, "eventType" TEXT NOT NULL, "payload" TEXT NOT NULL, "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW())`).then(() => 'call_events table OK').catch(e => 'call_events: ' + e.message));
+    results.push(await prisma.$executeRawUnsafe(`CREATE TABLE IF NOT EXISTS hospital_info ("id" TEXT PRIMARY KEY, "key" TEXT NOT NULL UNIQUE, "value" TEXT NOT NULL)`).then(() => 'hospital_info table OK').catch(e => 'hospital_info: ' + e.message));
+    // Drop old SQLite table if exists
+    results.push(await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "_prisma_migrations"`).then(() => 'cleaned migration table').catch(e => 'migration cleanup: ' + e.message));
     res.json({ success: true, data: results });
   } catch (error) {
     res.json({ success: false, error: String(error) });

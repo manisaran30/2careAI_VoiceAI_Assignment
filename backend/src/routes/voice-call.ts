@@ -97,18 +97,27 @@ router.post('/initiate', async (req: Request, res: Response) => {
       });
     } catch (providerErr) {
       // Provider failed — mark as failed but return session for error recovery
-      await withRetry(() =>
-        prisma.callLog.update({
-          where: { id: callLog.id },
-          data: { status: 'failed', errorLog: JSON.stringify([{ error: String(providerErr) }]) },
-        }),
-        'VoiceCall.initiate.error'
-      );
+      // Wrap in extra try-catch so even if DB/SSE fails, we return a clean response
+      try {
+        await withRetry(() =>
+          prisma.callLog.update({
+            where: { id: callLog.id },
+            data: { status: 'failed', errorLog: JSON.stringify([{ error: String(providerErr) }]) },
+          }),
+          'VoiceCall.initiate.error'
+        ).catch(() => {});
+      } catch {
+        // ignore DB update errors — session still usable
+      }
 
-      broadcastCallEvent(sessionId, 'call.error', {
-        sessionId,
-        message: 'Unable to connect the call. Please try again.',
-      });
+      try {
+        broadcastCallEvent(sessionId, 'call.error', {
+          sessionId,
+          message: 'Unable to connect the call. Please try again.',
+        });
+      } catch {
+        // ignore broadcast errors
+      }
 
       logger.error('VoiceCall.initiate', `Provider error for session ${sessionId}`, {
         error: String(providerErr),
