@@ -142,7 +142,7 @@ router.post('/seed', async (_req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Slots.seed', 'Failed to seed slots', { error: String(error) });
-    res.status(500).json({ error: 'Something went wrong.' });
+    res.status(500).json({ error: String(error) });
   }
 });
 
