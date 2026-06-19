@@ -31,12 +31,12 @@ router.get('/', async (req: Request, res: Response) => {
     const where: Record<string, unknown> = { isActive: true };
     if (specialty) {
       where.OR = [
-        { specialty: { contains: specialty as string } },
-        { department: { name: { contains: specialty as string } } },
+        { specialty: { contains: specialty as string, mode: 'insensitive' } },
+        { department: { name: { contains: specialty as string, mode: 'insensitive' } } },
       ];
     }
     if (branch) {
-      where.branch = { name: { contains: branch as string } };
+      where.branch = { name: { contains: branch as string, mode: 'insensitive' } };
     }
 
     const doctors = await prisma.doctor.findMany({
