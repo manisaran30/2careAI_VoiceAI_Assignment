@@ -7,23 +7,23 @@ import { logger } from '../logger';
 async function ensureTableExists(): Promise<boolean> {
   try {
     await prisma.$executeRawUnsafe(`
-      CREATE TABLE IF NOT EXISTS appointment_slots (
-        id TEXT PRIMARY KEY,
-        doctorId TEXT NOT NULL REFERENCES doctors(id),
-        date TIMESTAMPTZ NOT NULL,
-        time TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'available',
-        createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      CREATE TABLE IF NOT EXISTS "appointment_slots" (
+        "id" TEXT PRIMARY KEY,
+        "doctorId" TEXT NOT NULL REFERENCES "doctors"("id"),
+        "date" TIMESTAMPTZ NOT NULL,
+        "time" TEXT NOT NULL,
+        "status" TEXT NOT NULL DEFAULT 'available',
+        "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "updatedAt" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS idx_appointment_slots_doctor_date_status 
-      ON appointment_slots("doctorId", date, status);
+      ON "appointment_slots"("doctorId", "date", "status");
     `);
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS idx_appointment_slots_doctor_date_time 
-      ON appointment_slots("doctorId", date, time);
+      ON "appointment_slots"("doctorId", "date", "time");
     `);
     return true;
   } catch (err) {
@@ -121,11 +121,10 @@ router.get('/availability', async (req: Request, res: Response) => {
 // POST /api/slots/seed — Generate 7 days of slots for all doctors (admin/debug)
 router.post('/seed', async (_req: Request, res: Response) => {
   try {
+    // Drop old table if it exists (might have wrong column names from previous deploys)
+    await prisma.$executeRawUnsafe(`DROP TABLE IF EXISTS "appointment_slots";`);
     await ensureTableExists();
     logger.info('Slots.seed', 'Starting slot generation');
-
-    // Clear existing slots
-    await prisma.appointmentSlot.deleteMany();
     logger.info('Slots.seed', 'Cleared existing slots');
 
     const doctors = await prisma.doctor.findMany({ where: { isActive: true } });
