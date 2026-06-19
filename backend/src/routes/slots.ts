@@ -9,22 +9,21 @@ async function ensureTableExists(): Promise<boolean> {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS appointment_slots (
         id TEXT PRIMARY KEY,
-        doctor_id TEXT NOT NULL REFERENCES doctors(id),
+        doctorId TEXT NOT NULL REFERENCES doctors(id),
         date TIMESTAMPTZ NOT NULL,
         time TEXT NOT NULL,
         status TEXT NOT NULL DEFAULT 'available',
-        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        createdAt TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updatedAt TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
     `);
-    // Create indexes
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS idx_appointment_slots_doctor_date_status 
-      ON appointment_slots(doctor_id, date, status);
+      ON appointment_slots("doctorId", date, status);
     `);
     await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS idx_appointment_slots_doctor_date_time 
-      ON appointment_slots(doctor_id, date, time);
+      ON appointment_slots("doctorId", date, time);
     `);
     return true;
   } catch (err) {
@@ -173,7 +172,7 @@ router.post('/seed', async (_req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Slots.seed', 'Failed to seed slots', { error: String(error) });
-    res.status(500).json({ error: String(error) });
+    res.status(500).json({ error: 'Something went wrong.' });
   }
 });
 
