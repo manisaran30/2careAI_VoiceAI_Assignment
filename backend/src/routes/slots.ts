@@ -85,7 +85,8 @@ router.get('/availability', async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Slots.availability', 'Failed to check availability', { error: String(error) });
-    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+    const msg = process.env.NODE_ENV === 'development' ? String(error) : 'Something went wrong. Please try again.';
+    res.status(500).json({ error: msg });
   }
 });
 
@@ -142,7 +143,8 @@ router.post('/seed', async (_req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error('Slots.seed', 'Failed to seed slots', { error: String(error) });
-    res.status(500).json({ error: 'Something went wrong.' });
+    const msg = process.env.NODE_ENV === 'development' ? String(error) : 'Something went wrong.';
+    res.status(500).json({ error: msg });
   }
 });
 
