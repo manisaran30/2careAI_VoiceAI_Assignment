@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.next/
+.env
+.env.local
+*.log
+*.err
+.DS_Store
+coverage/
+uploads/
+prisma/dev.db
+prisma/dev.db-journal
+.kilo/
+scraper/

@@ -1,0 +1,98 @@
+import express from 'express';
+import cors from 'cors';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+import doctorsRouter from './routes/doctors';
+import departmentsRouter from './routes/departments';
+import patientsRouter from './routes/patients';
+import appointmentsRouter from './routes/appointments';
+import dashboardRouter from './routes/dashboard';
+import callbacksRouter from './routes/callbacks';
+import webhooksRouter from './routes/webhooks';
+import callsRouter from './routes/calls';
+import voiceCallRouter from './routes/voice-call';
+import branchesRouter from './routes/branches';
+import sseRouter from './routes/sse';
+import evaluationsRouter from './routes/evaluations';
+import debugRouter, { recordRequest } from './routes/debug';
+import { prisma } from './prisma';
+import { configureProvider } from './voice/provider-registry';
+import { logger } from './logger';
+
+const app = express();
+const PORT = process.env.PORT || 4000;
+
+app.use(cors());
+app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  const originalEnd = res.end.bind(res);
+  res.end = ((...args: Parameters<typeof originalEnd>) => {
+    const duration = Date.now() - start;
+    logger.info('HTTP', `${req.method} ${req.originalUrl} ${res.statusCode} ${duration}ms`);
+    recordRequest(req.method, req.originalUrl, res.statusCode, duration);
+    return originalEnd(...args);
+  }) as typeof originalEnd;
+  next();
+});
+
+// Initialize voice provider
+configureProvider();
+
+// Health check
+app.get('/api/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Routes
+app.use('/api/doctors', doctorsRouter);
+app.use('/api/departments', departmentsRouter);
+app.use('/api/patients', patientsRouter);
+app.use('/api/appointments', appointmentsRouter);
+app.use('/api/dashboard', dashboardRouter);
+app.use('/api/callbacks', callbacksRouter);
+app.use('/api/webhooks', webhooksRouter);
+app.use('/api/calls', callsRouter);
+app.use('/api/voice-call', voiceCallRouter);
+app.use('/api/branches', branchesRouter);
+app.use('/api/events', sseRouter);
+app.use('/api/evaluations', evaluationsRouter);
+app.use('/api/debug', debugRouter);
+
+// Global error handler — never expose raw errors to client
+app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error('Server', 'Unhandled error', { error: err.message, stack: err.stack });
+  res.status(500).json({ error: 'Something went wrong. Please try again.' });
+});
+
+// Periodic cleanup: mark sessions stuck in active/connecting for >5min as incomplete
+const CLEANUP_INTERVAL = 60_000; // every 60s
+const STALE_THRESHOLD = 5 * 60_000; // 5 minutes
+setInterval(async () => {
+  try {
+    const cutoff = new Date(Date.now() - STALE_THRESHOLD);
+    const stale = await prisma.callLog.updateMany({
+      where: {
+        status: { in: ['active', 'connecting'] },
+        updatedAt: { lt: cutoff },
+      },
+      data: { status: 'incomplete', partialSession: true },
+    });
+    if (stale.count > 0) {
+      logger.info('SessionCleanup', `Marked ${stale.count} stale sessions as incomplete`);
+    }
+  } catch (err) {
+    logger.error('SessionCleanup', 'Cleanup failed', { error: String(err) });
+  }
+}, CLEANUP_INTERVAL);
+
+app.listen(PORT, () => {
+  logger.info('Server', `Server running on http://localhost:${PORT}`);
+});
+
+export default app;

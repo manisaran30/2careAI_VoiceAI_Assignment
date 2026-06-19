@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  timings   String?  // JSON: {"weekday": "08:00-20:00", "weekend": "09:00-17:00"}
+  services  String   // JSON array stringified
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctors     Doctor[]
+  appointments Appointment[]
+
+  @@map("branches")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors Doctor[]
+
+  @@map("departments")
+}
+
+model Doctor {
+  id              String   @id @default(cuid())
+  name            String
+  specialty       String
+  experience      Int?
+  consultationFee Float?
+  languages       String  // JSON array stringified: ["English","Tamil"]
+  availableDays   String  // JSON array stringified: ["Monday","Tuesday"]
+  qualifications  String  // JSON array stringified
+  profileImage    String?
+  bio             String?
+  branchId        String
+  branch          Branch   @relation(fields: [branchId], references: [id])
+  departmentId    String
+  department      Department @relation(fields: [departmentId], references: [id])
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  appointments Appointment[]
+
+  @@index([specialty])
+  @@index([branchId])
+  @@index([departmentId])
+  @@map("doctors")
+}
+
+model Patient {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique
+  email     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  appointments           Appointment[]
+  callLogs               CallLog[]
+  humanFollowups         HumanFollowup[]
+  conversationSummaries  ConversationSummary[]
+
+  @@map("patients")
+}
+
+model Appointment {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    Patient  @relation(fields: [patientId], references: [id])
+  doctorId   String
+  doctor     Doctor   @relation(fields: [doctorId], references: [id])
+  branchId   String
+  branch     Branch   @relation(fields: [branchId], references: [id])
+  date       DateTime
+  time       String   // "10:30"
+  status     String   @default("scheduled") // scheduled, completed, cancelled, rescheduled, no_show
+  reason     String?
+  notes      String?
+  source     String   @default("manual") // manual, ai, phone
+  callLogId  String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  callLog CallLog? @relation(fields: [callLogId], references: [id])
+
+  @@index([patientId])
+  @@index([doctorId, date])
+  @@index([date])
+  @@map("appointments")
+}
+
+model CallLog {
+  id             String   @id @default(cuid())
+  callId         String   @unique // Bolna call ID
+  sessionId      String?  // Unique session identifier for frontend tracking
+  phone          String
+  direction      String   @default("inbound")
+  status         String   @default("completed") // connecting, active, processing, completed, failed, missed, incomplete
+  duration       Int?     // seconds
+  intent         String?
+  summary        String?
+  operation      String?  // Current operation: "checking_doctor", "booking", etc.
+  transcript     String?  // Accumulated transcript JSON stringified
+  partialSession Boolean  @default(false) // true if call disconnected unexpectedly
+  errorLog       String?  // JSON array of errors
+  patientId      String?
+  patient        Patient? @relation(fields: [patientId], references: [id])
+  metadata       String?  // JSON string
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  appointments        Appointment[]
+  conversationSummary ConversationSummary?
+  humanFollowups      HumanFollowup[]
+  webhookEvents       WebhookEvent[]
+  callEvents          CallEvent[]
+
+  @@index([sessionId])
+  @@index([phone])
+  @@index([createdAt])
+  @@map("call_logs")
+}
+
+model CallEvent {
+  id        String   @id @default(cuid())
+  sessionId String
+  callLogId String?
+  callLog   CallLog? @relation(fields: [callLogId], references: [id])
+  eventType String   // status_update, transcript, operation, error, summary
+  payload   String   // JSON
+  createdAt DateTime @default(now())
+
+  @@index([sessionId, createdAt])
+  @@map("call_events")
+}
+
+model ConversationSummary {
+  id             String   @id @default(cuid())
+  callLogId      String   @unique
+  callLog        CallLog  @relation(fields: [callLogId], references: [id])
+  patientId      String?
+  patient        Patient? @relation(fields: [patientId], references: [id])
+  patientName    String?
+  intent         String?
+  doctor         String?
+  department     String?
+  branch         String?
+  appointmentTime String?
+  outcome        String?  // booked, rescheduled, cancelled, handoff, faq, incomplete
+  callDuration   Int?
+  summary        String?
+  createdAt      DateTime @default(now())
+
+  @@map("conversation_summaries")
+}
+
+model HumanFollowup {
+  id        String   @id @default(cuid())
+  callLogId String?
+  callLog   CallLog? @relation(fields: [callLogId], references: [id])
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id])
+  reason    String
+  notes     String?
+  status    String   @default("pending") // pending, contacted, resolved
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("human_followups")
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  callLogId String?
+  callLog   CallLog? @relation(fields: [callLogId], references: [id])
+  eventType String   // call_started, call_completed, booking, execution_update, transcript, operation
+  payload   String?  // JSON string
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@map("webhook_events")
+}
+
+model EvaluationResult {
+  id            String   @id @default(cuid())
+  scenario      String
+  passed        Boolean
+  executionTime Int?     // ms
+  outcome       String?
+  details       String?  // JSON string
+  createdAt     DateTime @default(now())
+
+  @@map("evaluation_results")
+}
+
+model HospitalInfo {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String // JSON
+
+  @@map("hospital_info")
+}
