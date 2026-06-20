@@ -57,6 +57,27 @@ export function parseNaturalDate(text: string): { date: string; error?: string }
     return { date: d.toISOString().split('T')[0] };
   }
 
+  // Word-number to digit mapping
+  const wordNumMap: Record<string, string> = {
+    first: '1', second: '2', third: '3', fourth: '4', fifth: '5',
+    sixth: '6', seventh: '7', eighth: '8', ninth: '9', tenth: '10',
+    eleventh: '11', twelfth: '12', thirteenth: '13', fourteenth: '14', fifteenth: '15',
+    sixteenth: '16', seventeenth: '17', eighteenth: '18', nineteenth: '19', twentieth: '20',
+    'twenty first': '21', 'twenty second': '22', 'twenty third': '23', 'twenty fourth': '24', 'twenty fifth': '25',
+    'twenty sixth': '26', 'twenty seventh': '27', 'twenty eighth': '28', 'twenty ninth': '29', 'thirtieth': '30',
+    'thirty first': '31',
+  };
+
+  // Handle word-number dates: "twenty second june" => "22 june"
+  const wordDateMatch = lower.match(new RegExp(`^(${Object.keys(wordNumMap).join('|')})\\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\\s+(\\d{4}))?$`));
+  if (wordDateMatch) {
+    const day = wordNumMap[wordDateMatch[1]];
+    const month = wordDateMatch[2];
+    const year = wordDateMatch[3];
+    const reconstructed = `${day} ${month}${year ? ' ' + year : ''}`;
+    return parseNaturalDate(reconstructed);
+  }
+
   // "dd month" or "dd month yyyy" — e.g., "20 June", "20 June 2026"
   const dateMatch = lower.match(/^(\d{1,2})\s+(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s+(\d{4}))?$/);
   if (dateMatch) {

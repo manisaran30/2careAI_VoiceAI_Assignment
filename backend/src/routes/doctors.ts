@@ -128,6 +128,7 @@ router.post('/find', async (req: Request, res: Response) => {
       experience: d.experience,
       consultationFee: d.consultationFee,
       branch: d.branch.name,
+      branchId: d.branch.id,
       department: d.department.name,
       availableDays: JSON.parse(d.availableDays),
       languages: JSON.parse(d.languages),

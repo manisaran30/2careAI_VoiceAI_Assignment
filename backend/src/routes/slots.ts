@@ -37,81 +37,101 @@ const router = Router();
 const SLOT_TIMES = ['10:00', '11:00', '14:00', '15:00', '16:00'];
 const VALID_SLOT_TIMES = new Set(SLOT_TIMES);
 
+function getAvailableDays(doc: { availableDays: string | string[] }): string[] {
+  if (Array.isArray(doc.availableDays)) return doc.availableDays;
+  try {
+    const parsed = JSON.parse(doc.availableDays as string);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function checkAvailabilityResponse(doctorId: string, date: string): Promise<{ status: number; body: any }> {
+  await ensureTableExists();
+
+  if (!doctorId || !date) {
+    return { status: 400, body: { error: 'doctorId and date are required' } };
+  }
+
+  logger.info('Slots.availability', `Checking availability`, { doctorId, date });
+
+  const doctor = await prisma.doctor.findUnique({ where: { id: doctorId } });
+  if (!doctor) {
+    return { status: 404, body: { error: 'Doctor not found', data: [] } };
+  }
+
+  const parsed = parseNaturalDate(date);
+  const targetDate = parsed.date || date;
+
+  const dateObj = new Date(targetDate + 'T00:00:00.000Z');
+  if (isNaN(dateObj.getTime())) {
+    return { status: 400, body: { error: parsed.error || `Could not parse date: "${date}". Use YYYY-MM-DD format.` } };
+  }
+
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const dayOfWeek = dayNames[dateObj.getUTCDay()];
+
+  const availableDays = getAvailableDays(doctor);
+  if (!availableDays.includes(dayOfWeek)) {
+    return {
+      status: 200,
+      body: {
+        success: true,
+        data: [],
+        message: `Doctor is not available on ${dayOfWeek}s. Available days: ${availableDays.join(', ')}`,
+        doctorId,
+        date: targetDate,
+      },
+    };
+  }
+
+  const startDate = new Date(dateObj);
+  startDate.setUTCHours(0, 0, 0, 0);
+  const endDate = new Date(startDate);
+  endDate.setUTCDate(endDate.getUTCDate() + 1);
+
+  const slots = await prisma.appointmentSlot.findMany({
+    where: {
+      doctorId,
+      date: { gte: startDate, lt: endDate },
+      status: 'available',
+    },
+    select: { id: true, time: true, status: true },
+    orderBy: { time: 'asc' },
+  });
+
+  logger.info('Slots.availability', `Found ${slots.length} available slots`, {
+    doctorId,
+    date: targetDate,
+    dayOfWeek,
+    slots: slots.map((s) => s.time),
+  });
+
+  return {
+    status: 200,
+    body: { success: true, data: slots, doctorId, doctorName: doctor.name, date: targetDate, dayOfWeek },
+  };
+}
+
 // GET /api/slots/availability?doctorId=&date= — Get available slots for a doctor on a date
 router.get('/availability', async (req: Request, res: Response) => {
   try {
-    await ensureTableExists();
-    let { doctorId, date } = req.query;
+    const { doctorId, date } = req.query;
+    const { status, body } = await checkAvailabilityResponse(doctorId as string, date as string);
+    res.status(status).json(body);
+  } catch (error) {
+    logger.error('Slots.availability', 'Failed to check availability', { error: String(error) });
+    res.status(500).json({ error: 'Something went wrong. Please try again.' });
+  }
+});
 
-    if (!doctorId || !date) {
-      return res.status(400).json({ error: 'doctorId and date are required' });
-    }
-
-    const doctorIdStr = doctorId as string;
-    const dateStr = date as string;
-
-    logger.info('Slots.availability', `Checking availability`, { doctorId: doctorIdStr, date: dateStr });
-
-    // Verify doctor exists
-    const doctor = await prisma.doctor.findUnique({ where: { id: doctorIdStr } });
-    if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found', data: [] });
-    }
-
-    // Parse date — support natural language
-    const parsed = parseNaturalDate(dateStr);
-    const targetDate = parsed.date || dateStr;
-
-    const dateObj = new Date(targetDate + 'T00:00:00.000Z');
-    if (isNaN(dateObj.getTime())) {
-      return res.status(400).json({ error: parsed.error || 'Invalid date format' });
-    }
-
-    // Check if doctor works on this day
-    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayOfWeek = dayNames[dateObj.getUTCDay()];
-
-    if (!doctor.availableDays.includes(dayOfWeek)) {
-      return res.json({
-        success: true,
-        data: [],
-        message: `Doctor is not available on ${dayOfWeek}s`,
-        doctorId: doctorIdStr,
-        date: targetDate,
-      });
-    }
-
-    // Query slots from database
-    const startDate = new Date(dateObj);
-    startDate.setUTCHours(0, 0, 0, 0);
-    const endDate = new Date(startDate);
-    endDate.setUTCDate(endDate.getUTCDate() + 1);
-
-    const slots = await prisma.appointmentSlot.findMany({
-      where: {
-        doctorId: doctorIdStr,
-        date: { gte: startDate, lt: endDate },
-        status: 'available',
-      },
-      select: { id: true, time: true, status: true },
-      orderBy: { time: 'asc' },
-    });
-
-    logger.info('Slots.availability', `Found ${slots.length} available slots`, {
-      doctorId: doctorIdStr,
-      date: targetDate,
-      dayOfWeek,
-      slots: slots.map((s) => s.time),
-    });
-
-    res.json({
-      success: true,
-      data: slots,
-      doctorId: doctorIdStr,
-      doctorName: doctor.name,
-      date: targetDate,
-      dayOfWeek,
-    });
+// POST /api/slots/availability — Same as GET but accepts JSON body (more reliable for Bolna tools)
+router.post('/availability', async (req: Request, res: Response) => {
+  try {
+    const { doctorId, date } = req.body;
+    const { status, body } = await checkAvailabilityResponse(doctorId, date);
+    res.status(status).json(body);
   } catch (error) {
     logger.error('Slots.availability', 'Failed to check availability', { error: String(error) });
     res.status(500).json({ error: 'Something went wrong. Please try again.' });
