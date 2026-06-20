@@ -101,16 +101,39 @@ async function checkAvailabilityResponse(doctorId: string, date: string): Promis
     orderBy: { time: 'asc' },
   });
 
+  function to12h(t: string): string {
+    const [h, m] = t.split(':').map(Number);
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+  }
+
+  const slotsWithDisplay = slots.map((s) => ({
+    ...s,
+    displayTime: to12h(s.time),
+  }));
+
+  const displayTimes = slotsWithDisplay.map((s) => s.displayTime);
+
   logger.info('Slots.availability', `Found ${slots.length} available slots`, {
     doctorId,
     date: targetDate,
     dayOfWeek,
     slots: slots.map((s) => s.time),
+    displayTimes,
   });
 
   return {
     status: 200,
-    body: { success: true, data: slots, doctorId, doctorName: doctor.name, date: targetDate, dayOfWeek },
+    body: {
+      success: true,
+      data: slotsWithDisplay,
+      displayTimes,
+      doctorId,
+      doctorName: doctor.name,
+      date: targetDate,
+      dayOfWeek,
+    },
   };
 }
 

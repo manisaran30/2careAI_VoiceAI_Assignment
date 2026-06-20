@@ -40,7 +40,15 @@ router.post('/voice-book', async (req: Request, res: Response) => {
     let patient;
     if (phone) {
       patient = await prisma.patient.findUnique({ where: { phone } });
-      if (!patient) {
+      if (patient) {
+        // Update patient name if it was a temporary guest name
+        if (patient.name.startsWith('Guest') && patientName && patientName !== patient.name) {
+          patient = await prisma.patient.update({
+            where: { id: patient.id },
+            data: { name: patientName },
+          });
+        }
+      } else {
         patient = await prisma.patient.create({
           data: { name: patientName, phone },
         });
