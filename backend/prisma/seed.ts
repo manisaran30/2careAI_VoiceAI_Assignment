@@ -160,7 +160,7 @@ async function main() {
   console.log('\n✅ Seed completed successfully!');
   console.log(`  ${scraped.hospital.branches.length} branches`);
   console.log(`  ${scraped.departments.length} departments`);
-  console.log(`  ${doctorCount} doctors`);
+  console.log(`  ${doctorData.length} doctors`);
   console.log(`  ${allSlotData.length} slots (14 days)`);
 }
 
