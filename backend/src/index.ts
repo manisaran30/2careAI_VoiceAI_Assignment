@@ -18,6 +18,7 @@ import branchesRouter from './routes/branches';
 import sseRouter from './routes/sse';
 import evaluationsRouter from './routes/evaluations';
 import slotsRouter from './routes/slots';
+import bookingsRouter from './routes/bookings';
 import debugRouter, { recordRequest } from './routes/debug';
 import { prisma } from './prisma';
 import { configureProvider } from './voice/provider-registry';
@@ -65,6 +66,7 @@ app.use('/api/branches', branchesRouter);
 app.use('/api/events', sseRouter);
 app.use('/api/evaluations', evaluationsRouter);
 app.use('/api/slots', slotsRouter);
+app.use('/api/bookings', bookingsRouter);
 app.use('/api/debug', debugRouter);
 
 // Global error handler — never expose raw errors to client

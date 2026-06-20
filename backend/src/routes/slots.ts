@@ -4,7 +4,7 @@ import { withRetry } from '../middleware/retry';
 import { parseNaturalDate } from '../utils/date-parser';
 import { logger } from '../logger';
 
-async function ensureTableExists(): Promise<boolean> {
+export async function ensureTableExists(): Promise<boolean> {
   try {
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "appointment_slots" (
