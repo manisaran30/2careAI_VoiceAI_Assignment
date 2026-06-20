@@ -3,7 +3,7 @@ services:
     name: apollo-ai-backend
     runtime: node
     repo: https://github.com/manisaran30/2careAI_VoiceAI_Assignment
-    buildCommand: cd backend && cp prisma/schema.postgres.prisma prisma/schema.prisma && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
+    buildCommand: cd backend && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
     startCommand: cd backend && npm start
     healthCheckPath: /api/health
     envVars:

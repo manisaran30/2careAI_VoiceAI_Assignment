@@ -4,7 +4,7 @@ services:
     env: node
     region: singapore
     plan: free
-    buildCommand: cp prisma/schema.postgres.prisma prisma/schema.prisma && npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
+    buildCommand: npm install --include=dev && npx prisma generate && npm run build && npx prisma db push && npx prisma db seed
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
