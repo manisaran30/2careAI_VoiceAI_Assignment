@@ -1,0 +1,1376 @@
+{
+  "hospital": {
+    "name": "Apollo Hospitals Visakhapatnam",
+    "website": "https://www.apollohospitals.com",
+    "city": "Visakhapatnam",
+    "branches": [
+      {
+        "name": "Apollo Hospitals Health City, Arilova, Vizag",
+        "address": "Plot No:1, Arilova, Chinagadali, Visakhapatnam, Andhra Pradesh - 530040",
+        "phone": "+91-891-2867777",
+        "timings": {
+          "weekday": "06:00 - 22:00",
+          "weekend": "06:00 - 18:00",
+          "emergency": "24x7"
+        },
+        "services": [
+          "Cardiology",
+          "Cardio-thoracic Surgery",
+          "Orthopedics",
+          "Oncology",
+          "Neurology",
+          "Gastroenterology",
+          "Nephrology",
+          "Urology",
+          "Pulmonology",
+          "Pediatrics",
+          "OBG",
+          "ENT",
+          "Emergency & Critical Care",
+          "Organ Transplant"
+        ]
+      },
+      {
+        "name": "Apollo Hospitals, Ramnagar, Vizag",
+        "address": "10-50-80, Waltair Main Road, Ram Nagar, Visakhapatnam, Andhra Pradesh - 530002",
+        "phone": "+91-891-2562001",
+        "timings": {
+          "weekday": "07:00 - 21:00",
+          "weekend": "07:00 - 17:00",
+          "emergency": "24x7"
+        },
+        "services": [
+          "Cardiology",
+          "Cardio-thoracic Surgery",
+          "Nephrology",
+          "Urology",
+          "General Medicine",
+          "Critical Care",
+          "Daycare Surgery",
+          "Trauma Care"
+        ]
+      }
+    ]
+  },
+  "departments": [
+    {
+      "name": "Cardiology",
+      "description": "Heart care including diagnostics, interventional cardiology, and cardiac surgery."
+    },
+    {
+      "name": "Orthopedics",
+      "description": "Bone, joint, and spine care including joint replacement and sports medicine."
+    },
+    {
+      "name": "Dermatology",
+      "description": "Skin, hair, and nail care including cosmetic dermatology."
+    },
+    {
+      "name": "Pediatrics",
+      "description": "Child healthcare from newborn to adolescent."
+    },
+    {
+      "name": "General Medicine",
+      "description": "Primary care, internal medicine, and preventive healthcare."
+    },
+    {
+      "name": "ENT",
+      "description": "Ear, nose, and throat care including head and neck surgery."
+    },
+    {
+      "name": "Ophthalmology",
+      "description": "Eye care including cataract surgery, LASIK, and retina services."
+    },
+    {
+      "name": "Gastroenterology",
+      "description": "Digestive system care including endoscopy and liver care."
+    },
+    {
+      "name": "Neurology",
+      "description": "Brain, spine, and nervous system care including stroke management."
+    },
+    {
+      "name": "Gynecology & Obstetrics",
+      "description": "Women's health including prenatal care, maternity, and reproductive medicine."
+    },
+    {
+      "name": "Nephrology",
+      "description": "Kidney care including dialysis and kidney transplant."
+    },
+    {
+      "name": "Pulmonology",
+      "description": "Respiratory care including asthma, COPD, and sleep disorders."
+    },
+    {
+      "name": "Oncology",
+      "description": "Cancer care including medical, surgical, and radiation oncology."
+    },
+    {
+      "name": "Psychiatry",
+      "description": "Mental health care including therapy and psychiatric consultations."
+    },
+    {
+      "name": "Urology",
+      "description": "Urinary tract care including prostate, kidney stones, and bladder issues."
+    }
+  ],
+  "doctors": [
+    {
+      "name": "Dr Jaideep Kumar Trivedi",
+      "specialty": "Cardiothoracic And Vascular Surgery",
+      "experience": 19,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr M P S Chandra Kalyan",
+      "specialty": "Surgical Oncologist",
+      "experience": 11,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Ravi Raju Tatapudi",
+      "specialty": "Nephrologist",
+      "experience": 42,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Nephrology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Nephrology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Srinivas Rao Virothu",
+      "specialty": "Medical Gastroenterologist",
+      "experience": 5,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Gastroenterology & Hepatology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Indhukuri Satish Raju",
+      "specialty": "Orthopedician",
+      "experience": 27,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Orthopedics"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Orthopedics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Rajesh Venkat Indala",
+      "specialty": "Neurologist",
+      "experience": 11,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Neurosciences"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Neurology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Fazala Mehnaz",
+      "specialty": "Pediatrician",
+      "experience": 13,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pediatrics"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Pediatrics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Naveen Kumar Dannana",
+      "specialty": "Ent Specialist",
+      "experience": 22,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "ENT"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "ENT",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Avala Ravi Charan",
+      "specialty": "Pulmonologist",
+      "experience": 8,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pulmonology",
+        "MBBS",
+        "DTCD",
+        "DNB ( NIMS )Gold Medalist"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Pulmonology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Shanti Vardhan G",
+      "specialty": "Urologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi"
+      ],
+      "qualifications": [
+        "Urology"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Urology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Anitha Kolukula",
+      "specialty": "Internal Medicine Physician",
+      "experience": 21,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Internal Medicine"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Nanda Kishore Panigrahi",
+      "specialty": "Cardiologist",
+      "experience": 32,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Palayalasa Niranjan",
+      "specialty": "Surgical Oncologist",
+      "experience": 5,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr P Satya Vamseedhar",
+      "specialty": "Nephrologist",
+      "experience": 16,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Nephrology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Nephrology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Sumanth Simha Vankineni",
+      "specialty": "Medical Gastroenterologist",
+      "experience": 8,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Gastroenterology & Hepatology",
+        "MD"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Vidya Konduri",
+      "specialty": "Obstetrician And Gynecologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Obstetrics & Gynecology & Reproductive Medicine",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Ananda Kumar Mahapatra",
+      "specialty": "Neurosurgeon",
+      "experience": 8,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Neurosciences",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Neurology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Varakishan Kuramana",
+      "specialty": "Paediatrics And Neonatalogist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English"
+      ],
+      "qualifications": [
+        "Pediatrics"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Pradeep Palakonda",
+      "specialty": "Ent Specialist",
+      "experience": 20,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "ENT"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "ENT",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Venkateshwar Rao K",
+      "specialty": "Pulmonologist",
+      "experience": 34,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pulmonology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Pulmonology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Naidu Ch N",
+      "specialty": "Urologist",
+      "experience": 9,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Urology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Urology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Lakshmi Narayana K",
+      "specialty": "General Physician",
+      "experience": 6,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Internal Medicine"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Avinash Paidy",
+      "specialty": "General Surgeon",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi",
+        "Tamil"
+      ],
+      "qualifications": [
+        "General Medicine"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Dibya Kumar Baruah",
+      "specialty": "Cardiologist",
+      "experience": 30,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences",
+        "MBBS MD"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Kondamudi Dheeraj",
+      "specialty": "Head And Neck Surgical Oncologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr S Anil Kumar Patro",
+      "specialty": "Nephrologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Nephrology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Nephrology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr G Varun Teja",
+      "specialty": "Medical Gastroenterologist",
+      "experience": 6,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Gastroenterology & Hepatology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Batchu Sowdamini",
+      "specialty": "Obstetrician And Gynecologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Obstetrics & Gynaecology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Chitturi Viswateja",
+      "specialty": "Pediatrician",
+      "experience": 11,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pediatrics"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Pediatrics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Bhargavi K",
+      "specialty": "Pulmonologist",
+      "experience": 6,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pulmonology"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Pulmonology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Chakradhar Pedada",
+      "specialty": "Cardiologist",
+      "experience": 5,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Aditya Narayan",
+      "specialty": "Radiation Oncologist",
+      "experience": 22,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Boddepalli Satheesh Babu",
+      "specialty": "Surgical Gastroenterologist",
+      "experience": 22,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Gastroenterology & Hepatology",
+        "MS (GEN"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Ch Sanyasi Naidu",
+      "specialty": "Pediatrician",
+      "experience": 12,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Pediatrics"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Pediatrics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Kishore Vmk Gottapu",
+      "specialty": "Surgical Gastroenterologist",
+      "experience": 21,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Gastroenterology & Hepatology",
+        "MS(PG)"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": " Dr Mutnuru Venkata Ramana",
+      "specialty": "Radiation Oncologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi",
+        "Kannada"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Muralidhar Nambada",
+      "specialty": "Surgical Gastroenterologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi"
+      ],
+      "qualifications": [
+        "Gastroenterologist"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Gastroenterology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Ravikanth Telikicherla",
+      "specialty": "Cardiologist",
+      "experience": 7,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Shashanka Chunduri",
+      "specialty": "Cardiologist",
+      "experience": 15,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Cardiac Sciences",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals, Ramnagar, Vizag",
+      "department": "Cardiology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Suman Das",
+      "specialty": "Radiation Oncologist",
+      "experience": 17,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology",
+        "MBBS"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Rakesh Reddy Boya",
+      "specialty": "Medical Oncologist",
+      "experience": 10,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Oncology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Oncology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr G Santa Rao",
+      "specialty": "General Surgeon",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu",
+        "Hindi"
+      ],
+      "qualifications": [
+        "General Surgery"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Penta Radha Krishna Prasad",
+      "specialty": "Plastic Surgeon",
+      "experience": 33,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Plastic Surgery"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr M Madhusudhana Babu",
+      "specialty": "Neurologist",
+      "experience": 29,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Neurosciences"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Neurology",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Radhakanth Chunduri",
+      "specialty": "Psychiatrist",
+      "experience": 29,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Psychiatry & Psychology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Psychiatry",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Sreedevi Matta",
+      "specialty": "Obstetrician And Gynecologist",
+      "experience": 14,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Obstetrics & Gynaecology"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Sesha Mohan Debta",
+      "specialty": "Internal Medicine Physician",
+      "experience": 23,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Internal Medicine",
+        "MD PHYSICIAN"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "General Medicine",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Srinivas Singisetti",
+      "specialty": "Psychiatrist",
+      "experience": 23,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Psychiatry & Psychology",
+        "MD PSYCHIATRY ( NIMHANS ) MRC PSYCHIATRY"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Psychiatry",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Abdul D Khan",
+      "specialty": "Orthopedician",
+      "experience": 22,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Orthopedics",
+        "MBBS(AMC"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Orthopedics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    },
+    {
+      "name": "Dr Naveen Palla",
+      "specialty": "Orthopedician",
+      "experience": 18,
+      "consultationFee": 1900,
+      "languages": [
+        "English",
+        "Telugu"
+      ],
+      "qualifications": [
+        "Orthopedics",
+        "MS (Ortho)"
+      ],
+      "branch": "Apollo Hospitals Health City, Arilova, Vizag",
+      "department": "Orthopedics",
+      "availableDays": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "What are the OPD timings?",
+      "answer": "Our OPD operates from 6:00 AM to 10:00 PM on weekdays and 6:00 AM to 6:00 PM on weekends at our main branches.",
+      "category": "general"
+    },
+    {
+      "question": "How do I book an appointment?",
+      "answer": "You can call our AI receptionist, visit our website, or walk in to any branch.",
+      "category": "appointment"
+    },
+    {
+      "question": "What is the consultation fee?",
+      "answer": "Consultation fees vary by doctor, typically ranging from Rs.500 to Rs.3,000.",
+      "category": "billing"
+    },
+    {
+      "question": "Is parking available?",
+      "answer": "Yes, all our major branches have parking facilities available for patients and visitors.",
+      "category": "general"
+    },
+    {
+      "question": "Do you accept insurance?",
+      "answer": "Yes, we accept most major insurance plans. Please check with our billing desk.",
+      "category": "insurance"
+    },
+    {
+      "question": "Do you have emergency services?",
+      "answer": "Yes, both Apollo Arilova and Ramnagar have 24x7 emergency services.",
+      "category": "general"
+    },
+    {
+      "question": "What are the visiting hours?",
+      "answer": "Visiting hours are generally 6:00 AM to 8:00 PM. ICU visitation may have different timings.",
+      "category": "general"
+    },
+    {
+      "question": "Do you accept international patients?",
+      "answer": "Yes, Apollo Hospitals has international patient services to assist overseas patients.",
+      "category": "general"
+    },
+    {
+      "question": "Can I cancel or reschedule my appointment?",
+      "answer": "Yes, call our AI receptionist to cancel or reschedule appointments.",
+      "category": "appointment"
+    },
+    {
+      "question": "What languages are your doctors fluent in?",
+      "answer": "Most doctors speak English, Telugu, Hindi, and Tamil.",
+      "category": "general"
+    },
+    {
+      "question": "Do you have home collection for lab tests?",
+      "answer": "Yes, we offer home sample collection for most lab tests.",
+      "category": "services"
+    },
+    {
+      "question": "What documents do I need for my first visit?",
+      "answer": "Please carry a valid ID proof, any previous medical records, and your insurance card.",
+      "category": "appointment"
+    },
+    {
+      "question": "Do you have ambulance services?",
+      "answer": "Yes, we have 24x7 ambulance services with basic and advanced life support. Call 1066 for emergency.",
+      "category": "emergency"
+    },
+    {
+      "question": "Can I get a teleconsultation?",
+      "answer": "Yes, Apollo offers teleconsultation services via our website or app.",
+      "category": "services"
+    },
+    {
+      "question": "Do you have a pharmacy open 24 hours?",
+      "answer": "Yes, the Apollo pharmacy at both hospital locations is open 24x7.",
+      "category": "general"
+    },
+    {
+      "question": "How do I reach Arilova from Visakhapatnam Airport?",
+      "answer": "Apollo Arilova is approximately 15 km from Visakhapatnam Airport. Taxi service is available.",
+      "category": "general"
+    }
+  ],
+  "scrapedAt": "2026-06-20T17:05:58.025Z",
+  "source": "apollohospitals.com/book-doctor-appointment/visakhapatnam (50 doctors)"
+}

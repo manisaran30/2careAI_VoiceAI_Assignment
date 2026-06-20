@@ -11,4 +11,4 @@ uploads/
 **/dev.db
 **/dev.db-journal
 .kilo/
-scraper/
+eval-results-*.json
