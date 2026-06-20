@@ -92,37 +92,35 @@ async function main() {
   }
   console.log(`Created ${scraped.departments.length} departments`);
 
-  // Create Doctors
-  let doctorCount = 0;
+  // Create Doctors (batched)
+  const doctorData: {
+    name: string; specialty: string; experience: number | null;
+    consultationFee: number | null; languages: string; qualifications: string;
+    availableDays: string; branchId: string; departmentId: string;
+  }[] = [];
   for (const doc of scraped.doctors) {
     const branchId = branchMap[doc.branch];
     const departmentId = departmentMap[doc.department];
-
-    if (!branchId) {
-      console.warn(`  Skipping ${doc.name}: branch "${doc.branch}" not found`);
+    if (!branchId || !departmentId) {
+      console.warn(`  Skipping ${doc.name}: branch/department not found`);
       continue;
     }
-    if (!departmentId) {
-      console.warn(`  Skipping ${doc.name}: department "${doc.department}" not found`);
-      continue;
-    }
-
-    await prisma.doctor.create({
-      data: {
-        name: doc.name,
-        specialty: doc.specialty,
-        experience: doc.experience,
-        consultationFee: doc.consultationFee,
-        languages: JSON.stringify(doc.languages),
-        qualifications: JSON.stringify(doc.qualifications),
-        availableDays: JSON.stringify(doc.availableDays),
-        branchId,
-        departmentId,
-      },
+    doctorData.push({
+      name: doc.name,
+      specialty: doc.specialty,
+      experience: doc.experience,
+      consultationFee: doc.consultationFee,
+      languages: JSON.stringify(doc.languages),
+      qualifications: JSON.stringify(doc.qualifications),
+      availableDays: JSON.stringify(doc.availableDays),
+      branchId,
+      departmentId,
     });
-    doctorCount++;
   }
-  console.log(`Created ${doctorCount} doctors`);
+  if (doctorData.length > 0) {
+    await prisma.doctor.createMany({ data: doctorData });
+  }
+  console.log(`Created ${doctorData.length} doctors`);
 
   // Generate appointment slots for next 14 days (batched)
   const slotTimes = ['10:00', '11:00', '14:00', '15:00', '16:00'];
