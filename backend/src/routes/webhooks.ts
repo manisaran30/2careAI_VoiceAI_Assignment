@@ -86,14 +86,24 @@ router.post('/bolna/call-started', async (req: Request, res: Response) => {
       });
     }
 
-    await prisma.webhookEvent.create({
-      data: {
-        callLogId: callLog.id,
-        eventType: 'call_started',
-        payload: JSON.stringify(req.body),
-        processed: true,
-      },
-    });
+    await Promise.all([
+      prisma.webhookEvent.create({
+        data: {
+          callLogId: callLog.id,
+          eventType: 'call_started',
+          payload: JSON.stringify(req.body),
+          processed: true,
+        },
+      }),
+      prisma.callEvent.create({
+        data: {
+          sessionId: logSessionId,
+          callLogId: callLog.id,
+          eventType: 'status_update',
+          payload: JSON.stringify({ status: 'active', message: 'Call started' }),
+        },
+      }),
+    ]);
 
     broadcast('dashboard', 'call.started', { sessionId: logSessionId, status: 'active' });
 
@@ -116,9 +126,20 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'callId is required' });
     }
 
-    const callLog = await prisma.callLog.findUnique({ where: { callId } });
+    let callLog = await prisma.callLog.findUnique({ where: { callId } });
     if (!callLog) {
-      return res.status(404).json({ error: 'Call log not found' });
+      callLog = await prisma.callLog.create({
+        data: {
+          callId,
+          sessionId: bodySessionId || callId,
+          phone: req.body.phone || 'unknown',
+          direction: 'inbound',
+          status: 'completed',
+          duration: duration || null,
+          intent: intent || null,
+          summary: summary || null,
+        },
+      });
     }
 
     const logSessionId = bodySessionId || callLog.sessionId || callId;
@@ -165,14 +186,24 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
       await prisma.conversationSummary.create({ data: summaryData as any });
     }
 
-    await prisma.webhookEvent.create({
-      data: {
-        callLogId: callLog.id,
-        eventType: 'call_completed',
-        payload: JSON.stringify(req.body),
-        processed: true,
-      },
-    });
+    await Promise.all([
+      prisma.webhookEvent.create({
+        data: {
+          callLogId: callLog.id,
+          eventType: 'call_completed',
+          payload: JSON.stringify(req.body),
+          processed: true,
+        },
+      }),
+      prisma.callEvent.create({
+        data: {
+          sessionId: logSessionId,
+          callLogId: callLog.id,
+          eventType: 'status_update',
+          payload: JSON.stringify({ status: 'completed', duration, message: 'Call completed' }),
+        },
+      }),
+    ]);
 
     // Update session manager — transition through ending to completed
     const session = sessionManager.getSession(logSessionId);

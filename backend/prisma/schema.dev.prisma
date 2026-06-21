@@ -172,13 +172,6 @@ model ConversationSummary {
   @@map("conversation_summaries")
 }
 
-model HospitalInfo {
-  id    String @id @default(cuid())
-  key   String @unique
-  value String // JSON
-
-  @@map("hospital_info")
-}
 
 model HumanFollowup {
   id        String   @id @default(cuid())

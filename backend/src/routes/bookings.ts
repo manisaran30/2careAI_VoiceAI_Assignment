@@ -99,9 +99,18 @@ router.post('/voice-book', async (req: Request, res: Response) => {
       });
     }
 
-    // Create appointment and mark slot booked (atomic)
-    const [appointment] = await prisma.$transaction([
-      prisma.appointment.create({
+    // Create appointment and mark slot booked (atomic, race-condition-safe)
+    const appointment = await prisma.$transaction(async (tx) => {
+      const updated = await tx.appointmentSlot.updateMany({
+        where: { id: slot.id, status: 'available' },
+        data: { status: 'booked' },
+      });
+
+      if (updated.count === 0) {
+        throw new Error('Slot already booked by another request');
+      }
+
+      return tx.appointment.create({
         data: {
           patientId: patient.id,
           doctorId,
@@ -117,12 +126,8 @@ router.post('/voice-book', async (req: Request, res: Response) => {
           doctor: { select: { name: true, specialty: true } },
           branch: { select: { name: true } },
         },
-      }),
-      prisma.appointmentSlot.update({
-        where: { id: slot.id },
-        data: { status: 'booked' },
-      }),
-    ]);
+      });
+    });
 
     logger.info('Bookings.voiceBook', 'Appointment booked via voice', {
       appointmentId: appointment.id,

@@ -63,6 +63,15 @@ router.post('/initiate', async (req: Request, res: Response) => {
       'VoiceCall.initiate'
     );
 
+    prisma.callEvent.create({
+      data: {
+        sessionId,
+        callLogId: callLog.id,
+        eventType: 'status_update',
+        payload: JSON.stringify({ status: 'connecting', message: 'Call initiated' }),
+      },
+    }).catch(() => {});
+
     sessionManager.transition(sessionId, 'connecting', {
       callLogId: callLog.id,
       patientId: patient!.id,
@@ -84,6 +93,15 @@ router.post('/initiate', async (req: Request, res: Response) => {
         }),
         'VoiceCall.initiate'
       );
+
+      prisma.callEvent.create({
+        data: {
+          sessionId,
+          callLogId: callLog.id,
+          eventType: 'status_update',
+          payload: JSON.stringify({ status: 'active', message: 'Call connected' }),
+        },
+      }).catch(() => {});
 
       sessionManager.transition(sessionId, 'connected', {
         executionId: result.executionId,
@@ -114,6 +132,15 @@ router.post('/initiate', async (req: Request, res: Response) => {
       } catch {
         // ignore
       }
+
+      prisma.callEvent.create({
+        data: {
+          sessionId,
+          callLogId: callLog.id,
+          eventType: 'status_update',
+          payload: JSON.stringify({ status: 'failed', message: String(providerErr) }),
+        },
+      }).catch(() => {});
 
       sessionManager.transition(sessionId, 'disconnected', {
         terminationReason: 'Provider initiation failed',
@@ -172,27 +199,50 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
       }
     }
 
-    // Update DB
+    // Update DB — create CallEvent, WebhookEvent, and ConversationSummary alongside
     const callLog = await prisma.callLog.findFirst({ where: { sessionId } });
+    const duration = session.startTime ? Math.floor((Date.now() - session.startTime) / 1000) : null;
+
     if (callLog) {
       await withRetry(() =>
         prisma.callLog.update({
           where: { id: callLog.id },
-          data: {
-            status: 'completed',
-            duration: session.startTime ? Math.floor((Date.now() - session.startTime) / 1000) : null,
-          },
+          data: { status: 'completed', duration },
         }),
         'VoiceCall.end'
       ).catch(() => {});
     }
 
-    // Fetch final session data from DB for summary
+    // Create status_update CallEvent for lifecycle tracking
+    if (callLog) {
+      prisma.callEvent.create({
+        data: {
+          sessionId,
+          callLogId: callLog.id,
+          eventType: 'status_update',
+          payload: JSON.stringify({ status: 'completed', duration, message: 'Call ended by user' }),
+        },
+      }).catch(() => {});
+    }
+
+    // Create WebhookEvent for audit trail
+    if (callLog) {
+      prisma.webhookEvent.create({
+        data: {
+          callLogId: callLog.id,
+          eventType: 'call_completed',
+          payload: JSON.stringify({ sessionId, status: 'completed', duration, terminationReason: 'user_ended' }),
+          processed: true,
+        },
+      }).catch(() => {});
+    }
+
+    // Fetch or create ConversationSummary
     let summaryData: ConversationSummaryData | null = null;
     if (callLog) {
       const fullData = await prisma.callLog.findFirst({
         where: { sessionId },
-        include: { conversationSummary: true },
+        include: { conversationSummary: true, patient: { select: { name: true } } },
       }).catch(() => null);
 
       if (fullData?.conversationSummary) {
@@ -207,6 +257,22 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
           outcome: cs.outcome,
           callDuration: cs.callDuration,
           summary: cs.summary,
+        };
+      } else {
+        const minimalSummary = {
+          callLogId: callLog.id,
+          patientId: callLog.patientId || undefined,
+          patientName: fullData?.patient?.name || null,
+          callDuration: duration,
+          outcome: 'completed',
+          summary: 'Call ended by user before summary was generated.',
+        };
+        await prisma.conversationSummary.create({ data: minimalSummary }).catch(() => {});
+        summaryData = {
+          patientName: minimalSummary.patientName,
+          outcome: 'completed',
+          callDuration: duration,
+          summary: minimalSummary.summary,
         };
       }
     }

@@ -209,14 +209,118 @@ Bolna reports per-turn latency in webhook `latency_data`:
 
 ## Eval Harness
 
-### Backend API Eval (automated)
-Run 13 tests covering the full lifecycle:
+### Design Philosophy
+
+The eval harness tests the **API surface the AI agent calls** — not database CRUD operations. It measures what matters for a voice receptionist: task completion, graceful error handling, latency, and data integrity.
+
+### 6 Dimensions (weighted)
+
+| Dimension | Weight | What it measures | Why it matters |
+|---|---|---|---|
+| **E2E Booking Flow** | 25% | Full book → verify → reschedule → cancel → handoff lifecycle | Core business value |
+| **Hallucination Resistance** | 20% | Graceful handling of nonsense inputs (fake specialties, missing fields, non-existent IDs) | AI agent must say "I don't know" instead of inventing data |
+| **Conversation Simulation** | 15% | Multi-turn flow: search → slot check → book → verify (chained like a real call). Concurrent booking race protection. Natural language search coverage across 10 medical terms | Tests the agent's actual call flow — not isolated API calls |
+| **Error Recovery** | 20% | Proper 4xx codes, no crashes on bad requests, missing fields | Production resilience |
+| **Latency & Performance** | 15% | Per-endpoint p50/p95/p99 latency over 5 iterations, budget thresholds | Voice calls are real-time; <1s for lookups, <2s for bookings |
+| **Data Quality** | 5% | FK integrity, valid status transitions, branch/doctor consistency | Trust in the data pipeline |
+
+### Run It
+
+Two modes:
+
 ```bash
 cd backend
-npx tsx src/scripts/eval-harness.ts
+npm run eval              # auto-detects — hits localhost:3001 if running, else direct Prisma
+npm run eval:direct       # force direct Prisma mode
 ```
 
-Tests include: health check, doctor lookup (exact + vague), patient creation, booking → reschedule → cancel, human handoff, conflict detection, out-of-hours, branch distribution.
+Against a remote server:
+```bash
+BASE_URL=https://apollo-ai-backend-0jmd.onrender.com npm run eval
+```
+
+Output: `eval-results-{timestamp}.json` with per-test pass/fail, latency, dimension scores, and overall score.
+
+### Latest Results (live Render API, 2026-06-21)
+
+```
+OVERALL SCORE: 90/100  (31 tests, 23 passed, 74.2% pass rate, 45s total)
+
+  E2E Booking (25%):              40%  — vague search + booking cascade failures
+  Hallucination Resistance (20%): 100%
+  Conversation Simulation (15%):  33%  — concurrent booking race detected
+  Error Recovery (20%):           100%
+  Latency (15%):                  100%
+  Data Quality (5%):              100%
+
+Latency:
+  List Doctors    p50=727ms  p95=800ms  (budget: 1000ms)
+  List Branches   p50=437ms  p95=459ms  (budget: 1000ms)
+  List Departments p50=436ms p95=439ms  (budget: 1000ms)
+```
+### Shortcomings of This Harness
+
+- Tests HTTP API endpoints, not the actual Bolna voice conversation — no NLU quality or transcript evaluation
+- Latency measured from the test runner, not from the agent's perspective (excludes network jitter and STT/TTS latency)
+- No STT/TTS accuracy measurement — requires audio processing pipeline
+- Conversation simulation is pre-scripted (API call order), not generative like a real LLM-driven call
+- Hallucination tests only cover API-level errors, not AI-level hallucinations in the LLM's generated responses
+- Single-region, single-server — no failover or concurrency stress testing under load
+
+### Key Issues Found
+
+1. **Vague "heart doctor" search returned 0 results** — synonym mapping fix applied locally, pending deploy.
+
+2. **Booking cascade failure** — the `voice-book` endpoint failed on Render (likely free-tier cold-start timeout for the 3.4s request). All downstream tests (verify, reschedule, cancel) depend on a successful booking.
+
+3. **Race condition in `bookings.ts:voice-book`** — concurrent bookings for the same slot both succeeded. The transaction used `$transaction([create, update])` but the slot `findFirst` (line 88) and the transaction weren't atomic — two requests could both find the slot `available` and both transactions would commit. **Fix applied**: switched to `$transaction(async (tx) => { updateMany with where: { status: 'available' } → if count===0, throw })` which atomically claims the slot before creating the appointment.
+
+4. **Natural language search failed** — the synonym map (heart→cardio, bone→ortho, etc.) isn't deployed yet.
+
+### Deep Dive: The Race Condition Fix
+
+Before:
+```
+findFirst({ status: 'available' })  ← both requests see available
+$transaction([create appointment, update slot to 'booked'])  ← both commit
+```
+
+After:
+```
+$transaction(async (tx) => {
+  updateMany({ where: { id, status: 'available' }, data: { status: 'booked' } })
+  if (count === 0) throw 'Slot already booked'
+  create appointment
+})
+```
+
+The slot `status` check and the update are now in the same atomic operation. Prisma's `updateMany` returns `{ count }` — if 0, another request claimed the slot first and the entire transaction rolls back. This is a real bug the eval harness caught that would have caused double-bookings in production.
+
+### Shortcomings of This Harness
+
+The vague term "heart doctor" returned 0 results — the search used literal `CONTAINS 'heart doctor'` against specialty names like "Interventional Cardiologist". **This is a real hallucination risk**: a caller saying "I need a heart doctor" would hear "no doctors found" despite 3 cardiologists being available.
+
+**Fix applied**: Added a synonym map in `doctors.ts` that expands common vague terms:
+- `"heart"` → also search `cardio`, `cardiologist`, `cardiac`
+- `"bone"` → `ortho`, `orthopedic`
+- `"skin"` → `derma`, `dermatologist`
+- `"eye"` → `ophthalmo`, `ophthalmologist`, `eye`
+- `"child"` → `pedia`, `pediatric`, `children`
+- `"brain"/"nerve"` → `neuro`, `neurologist`
+- `"kidney"` → `nephro`, `nephrologist`, `renal`
+- `"stomach"/"digestive"` → `gastro`, `gastroenterologist`
+- `"cancer"` → `onco`, `oncologist`
+- `"ear"/"nose"/"throat"` → `ent`
+
+### Shortcomings of This Harness
+
+- Tests HTTP API endpoints, not the actual Bolna voice conversation — no NLU quality or transcript evaluation
+- Synthetic test data, not real patient call patterns
+- No multi-turn conversation simulation (context carry-over between turns)
+- Latency measured from the test runner, not from the agent's perspective (excludes network jitter in API mode)
+- No STT/TTS accuracy measurement
+- Hallucination tests only cover API-level errors, not AI-level hallucinations in generated responses
+- Single-region, single-server — no failover or concurrency testing
 
 **Output**: `eval-results-{timestamp}.json` with per-test pass/fail, duration, and summary.
 

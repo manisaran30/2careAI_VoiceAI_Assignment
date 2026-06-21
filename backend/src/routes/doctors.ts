@@ -98,10 +98,46 @@ router.post('/find', async (req: Request, res: Response) => {
     }
 
     if (specialty) {
+      const vagueTerms: Record<string, string[]> = {
+        'heart': ['cardio', 'cardiologist', 'cardiac'],
+        'bone': ['ortho', 'orthopedic'],
+        'skin': ['derma', 'dermatologist', 'dermatology'],
+        'eye': ['ophthalmo', 'ophthalmologist', 'ophthalmology', 'eye'],
+        'child': ['pedia', 'pediatric', 'pediatrician', 'children'],
+        'brain': ['neuro', 'neurologist', 'neurology'],
+        'nerve': ['neuro', 'neurologist', 'neurology'],
+        'kidney': ['nephro', 'nephrologist', 'nephrology', 'renal'],
+        'stomach': ['gastro', 'gastroenterologist', 'gastroenterology'],
+        'digestive': ['gastro', 'gastroenterologist', 'gastroenterology'],
+        'cancer': ['onco', 'oncologist', 'oncology'],
+        'women': ['gynae', 'gynecologist', 'obg', 'obstetrics'],
+        'ear': ['ent'],
+        'nose': ['ent'],
+        'throat': ['ent'],
+      };
+
+      let searchTerms = [specialty as string];
+      const lower = (specialty as string).toLowerCase();
+      for (const [vague, expansions] of Object.entries(vagueTerms)) {
+        if (lower.includes(vague)) {
+          searchTerms = [...searchTerms, ...expansions];
+          break;
+        }
+      }
+
       where.OR = [
-        { specialty: { contains: specialty as string, mode: 'insensitive' } },
-        { department: { name: { contains: specialty as string, mode: 'insensitive' } } },
+        { specialty: { contains: searchTerms[0], mode: 'insensitive' } },
+        { department: { name: { contains: searchTerms[0], mode: 'insensitive' } } },
       ];
+
+      if (searchTerms.length > 1) {
+        for (let i = 1; i < searchTerms.length; i++) {
+          (where.OR as any[]).push(
+            { specialty: { contains: searchTerms[i], mode: 'insensitive' } },
+            { department: { name: { contains: searchTerms[i], mode: 'insensitive' } } },
+          );
+        }
+      }
     }
 
     const doctors = await prisma.doctor.findMany({

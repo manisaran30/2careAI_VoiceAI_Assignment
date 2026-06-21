@@ -10,7 +10,10 @@
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
-    "db:dev": "Copy-Item -Force prisma/schema.dev.prisma prisma/schema.prisma; Write-Host 'Switched to SQLite dev schema'"
+    "db:dev": "Copy-Item -Force prisma/schema.dev.prisma prisma/schema.prisma; Write-Host 'Switched to SQLite dev schema'",
+    "eval": "tsx src/scripts/eval-harness.ts",
+    "eval:api": "tsx src/scripts/eval-harness.ts",
+    "eval:direct": "tsx src/scripts/eval-harness.ts --direct"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
