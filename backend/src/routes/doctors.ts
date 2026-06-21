@@ -168,6 +168,7 @@ router.post('/find', async (req: Request, res: Response) => {
       department: d.department.name,
       availableDays: JSON.parse(d.availableDays),
       languages: JSON.parse(d.languages),
+      voiceSummary: `Dr. ${d.name}, ${d.specialty}${d.experience ? `, ${d.experience} years` : ''}`,
     }));
 
     logger.info('Doctors.find', `Found ${result.length} doctors`, {
