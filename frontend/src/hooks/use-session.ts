@@ -34,7 +34,7 @@ export function useSession() {
   // SSE connection — enabled during active call phases
   useCallSSE({
     sessionId,
-    enabled: phase === "connecting" || phase === "connected" || phase === "ai_speaking" || phase === "user_speaking" || phase === "processing",
+    enabled: phase === "connecting" || phase === "connected" || phase === "ai_speaking" || phase === "user_speaking" || phase === "processing" || phase === "ending",
   })
 
   // Timer driven by connected phases
