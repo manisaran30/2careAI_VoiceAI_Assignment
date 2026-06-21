@@ -1,4 +1,4 @@
-# Bolna Agent Configuration — Apollo Chennai AI Receptionist
+# Bolna Agent Configuration — Apollo Vizag AI Receptionist
 
 > This document captures every setting to configure in the Bolna dashboard for the Apollo Hospitals AI Receptionist agent.
 > Configure these settings manually at https://platform.bolna.ai after signing in.
@@ -28,8 +28,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Agent Name** | Apollo Chennai AI Receptionist |
-| **Description** | AI receptionist for Apollo Hospitals Chennai — handles appointment booking, rescheduling, cancellations, doctor lookups, FAQs, and human handoffs. |
+| **Agent Name** | Apollo Vizag AI Receptionist |
+| **Description** | AI receptionist for Apollo Hospitals Visakhapatnam — handles appointment booking, rescheduling, cancellations, doctor lookups, FAQs, and human handoffs. |
 | **Primary Language** | English (`en`) |
 | **Secondary Languages** | Hindi (`hi`), Tamil (`ta`) — optional |
 | **Timezone** | Asia/Kolkata (UTC+05:30) |
@@ -41,7 +41,7 @@
 Set in **Agent Tab > Welcome Message**:
 
 ```
-Hello! Welcome to Apollo Hospitals Chennai. I'm your AI receptionist. How can I help you today? You can ask me to book an appointment, find a doctor, or get information about our services.
+Hello! Welcome to Apollo Hospitals Visakhapatnam. I'm your AI receptionist. How can I help you today? You can ask me to book an appointment, find a doctor, or get information about our services.
 ```
 
 **Guidelines:**
@@ -56,7 +56,7 @@ Hello! Welcome to Apollo Hospitals Chennai. I'm your AI receptionist. How can I 
 Set in **Agent Tab > English (Primary) > Canvas**:
 
 ```
-You are an AI receptionist for Apollo Hospitals Chennai, one of India's leading multi-specialty hospital chains. Your goal is to help patients book, reschedule, or cancel appointments, find the right doctor, and answer hospital-related questions.
+You are an AI receptionist for Apollo Hospitals Visakhapatnam, one of India's leading multi-specialty hospital chains. Your goal is to help patients book, reschedule, or cancel appointments, find the right doctor, and answer hospital-related questions.
 
 ## Personality
 - Warm, professional, and patient — like a real hospital receptionist
@@ -65,7 +65,7 @@ You are an AI receptionist for Apollo Hospitals Chennai, one of India's leading 
 - Be concise but thorough in explanations
 
 ## Context
-- You represent Apollo Hospitals with branches at: Greams Road, Teynampet, Velachery, and OMR Road
+- You represent Apollo Hospitals with branches at: Arilova and Ramnagar
 - You have access to doctor directories, appointment slots, and hospital FAQ information
 - You always confirm patient phone numbers before making any changes
 - You never make up information — use your tools to fetch real data
@@ -98,11 +98,19 @@ You are an AI receptionist for Apollo Hospitals Chennai, one of India's leading 
 - Use {from_number} as the patient's phone number for lookups
 - Reference {current_date} and {current_time} for appointment context
 
+## Pronunciation & Formatting (CRITICAL — Must Follow)
+- Times: ALWAYS speak as "10 AM", "11 AM", "2 PM", "3 PM", "4 PM" — NEVER as digits like "one zero zero zero" or "one four zero zero" or "three zero zero"
+- Fees: ALWAYS as "one thousand nine hundred rupees" for Rs.1,900 — NEVER "one nine zero zero rupees" or "nineteen hundred"
+- Dates: ALWAYS natural — "June 22nd, 2026" — NOT as numbers
+- Phone numbers: Digit by digit — "nine one eight nine one two eight six seven seven seven seven"
+- No punctuation aloud: NEVER say "colon", "semicolon", "comma", "dot", "slash"
+
 ## Important Notes
 - Consultation fees are to be paid at the hospital — do not collect payments
 - Remind patients to arrive 15 minutes early for new appointments
-- OPD timings: Weekday 6:00 AM - 10:00 PM, Weekend 6:00 AM - 6:00 PM
-- Emergency services available 24x7 at Greams Road, Teynampet, and OMR Road branches
+- Arilova timings: Weekday 6:00 AM - 10:00 PM, Weekend 6:00 AM - 6:00 PM
+- Ramnagar timings: Weekday 7:00 AM - 9:00 PM, Weekend 7:00 AM - 5:00 PM
+- Emergency services available 24x7 at both branches
 ```
 
 ---
@@ -165,7 +173,7 @@ A conversation is considered complete if any of the following conditions are met
 
 6. The patient is not reachable or the line goes silent after the closing message.
 
-Closing message before hangup: "Thank you for calling Apollo Hospitals Chennai. Have a great day! Goodbye."
+Closing message before hangup: "Thank you for calling Apollo Hospitals Visakhapatnam. Have a great day! Goodbye."
 
 The last message in the transcript must be from the user or the closing message has been delivered.
 ```
@@ -205,7 +213,7 @@ The last message in the transcript must be from the user or the closing message 
 |---------|-------|
 | **Provider** | Deepgram |
 | **Model** | `nova-3` |
-| **Keywords** | `Apollo:100`, `Chennai:80`, `Teynampet:80`, `Velachery:80`, `Greams:80`, `OMR:80`, `Cardiology:80`, `Orthopedics:80` |
+| **Keywords** | `Apollo:100`, `Arilova:80`, `Ramnagar:80`, `Visakhapatnam:80`, `Vizag:80`, `Telugu:80`, `Cardiology:80`, `Orthopedics:80` |
 
 ### Speech-to-Text (STT) — Hindi (optional)
 
@@ -288,9 +296,9 @@ Select your telephony provider (buy a number from Bolna or connect your own):
 
 | Language | Message |
 |----------|---------|
-| English | Thank you for calling Apollo Hospitals Chennai. Have a great day! Goodbye. |
-| Hindi | अपोलो हॉस्पिटल्स चेन्नई में कॉल करने के लिए धन्यवाद। आपका दिन शुभ हो! नमस्ते। |
-| Tamil | அப்போலோ மருத்துவமனை சென்னைக்கு அழைத்ததற்கு நன்றி. உங்கள் நாள் இனியதாக அமையட்டும்! வணக்கம். |
+| English | Thank you for calling Apollo Hospitals Visakhapatnam. Have a great day! Goodbye. |
+| Hindi | अपोलो हॉस्पिटल्स विशाखापट्टनम में कॉल करने के लिए धन्यवाद। आपका दिन शुभ हो! नमस्ते। |
+| Tamil | அப்போலோ மருத்துவமனை விசாகப்பட்டினத்திற்கு அழைத்ததற்கு நன்றி. உங்கள் நாள் இனியதாக அமையட்டும்! வணக்கம். |
 
 ### Call Management
 
@@ -328,7 +336,7 @@ Add these **7 custom functions** in the Tools Tab. Each uses the **Write manuall
       },
       "branch": {
         "type": "string",
-        "description": "Optional branch name to filter doctors by location, e.g., 'Greams Road', 'Teynampet', 'Velachery', 'OMR Road'."
+        "description": "Optional branch name to filter doctors by location, e.g., 'Arilova', 'Ramnagar'."
       }
     },
     "required": ["specialty"]
@@ -535,29 +543,36 @@ Add these **7 custom functions** in the Tools Tab. Each uses the **Write manuall
 ```
 {
   "name": "fetch_patient_bookings",
-  "description": "Use this function when the patient wants to check their existing appointments, view their booking history, or when you need to find a specific booking to reschedule or cancel. Ask for the patient's phone number first.",
+  "description": "Look up a patient's existing appointments by phone number or name. Ask for their phone number first, but if they don't know it, ask for their full name as an alternative.",
   "pre_call_message": "Let me look up your appointments.",
   "parameters": {
     "type": "object",
+    "required": [],
     "properties": {
       "phone": {
         "type": "string",
-        "description": "The patient's registered phone number in E.164 format, e.g., '+919876543210'."
+        "description": "Patient's registered phone number"
+      },
+      "name": {
+        "type": "string",
+        "description": "Patient's full name (alternative to phone)"
       }
-    },
-    "required": ["phone"]
+    }
   },
   "key": "custom_task",
   "value": {
     "method": "GET",
     "param": {
-      "phone": "%(phone)s"
+      "phone": "%(phone)s",
+      "name": "%(name)s"
     },
-    "url": "https://your-backend-url.com/api/appointments",
-    "api_token": "",
+    "url": "https://apollo-ai-backend-0jmd.onrender.com/api/appointments",
+    "api_token": null,
     "headers": {
       "Content-Type": "application/json"
-    }
+    },
+    "pre_call_webhook_url": null,
+    "pre_call_webhook_param": null
   }
 }
 ```
@@ -636,7 +651,7 @@ This single webhook URL receives all execution updates (status changes, completi
 | **Patient Name** | What is the patient's full name? | Free Text |
 | **Doctor** | Which doctor was discussed or booked? | Free Text |
 | **Department** | Which medical department was involved? | Free Text |
-| **Branch** | Which hospital branch was mentioned? | Pre-defined: `Greams Road`, `Teynampet`, `Velachery`, `OMR Road`, `not_specified` |
+| **Branch** | Which hospital branch was mentioned? | Pre-defined: `Arilova`, `Ramnagar`, `not_specified` |
 | **Appointment Time** | What date and time was the appointment scheduled for? Format: YYYY-MM-DD HH:MM | Free Text |
 | **Appointment ID** | If an appointment was created, what is its ID? | Free Text |
 
@@ -754,10 +769,10 @@ Alternatively, upload the scraped data directly:
 
 ### What the Knowledge Base Covers
 
-- Branch details (Greams Road, Teynampet, Velachery, OMR Road) with addresses, phones, timings
-- All 14 departments with descriptions
-- 10 sample doctors with specialties, experience, fees, availability
-- 12 common FAQs with answers (timings, booking process, fees, parking, insurance, emergency, etc.)
+- Branch details (Arilova, Ramnagar) with addresses, phones, timings
+- All 15 departments with descriptions
+- 50 real Vizag doctors with specialties, experience, fees, availability
+- 16 common FAQs with answers
 - Appointment booking flow instructions
 
 ---

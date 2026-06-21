@@ -1,111 +1,70 @@
-﻿# Apollo Hospitals Chennai - AI Receptionist Knowledge Base
-# This document provides context for the Bolna Voice AI agent
+﻿# Apollo Hospitals Visakhapatnam - AI Receptionist Knowledge Base
 
 ## Hospital Overview
-Apollo Hospitals Chennai is a leading multi-specialty hospital in Chennai, India.
+Apollo Hospitals Visakhapatnam is a leading multi-specialty hospital in Visakhapatnam, Andhra Pradesh.
 Website: https://www.apollohospitals.com
-City: Chennai
-Country: India
+City: Visakhapatnam (Vizag), Andhra Pradesh
 
-## Branches / Locations
+## Branches
 
-### 1. Apollo Hospitals, Greams Road
-- Address: 21, Greams Lane, Off Greams Road, Chennai - 600006
-- Phone: +91-44-28290200
+### 1. Apollo Hospitals Health City, Arilova
+- Address: Plot No:1, Arilova, Chinagadali, Visakhapatnam - 530040
+- Phone: +91-891-2867777
 - Timings: Weekday 06:00 - 22:00, Weekend 06:00 - 18:00
 - Emergency: 24x7
-- Services: Emergency, Cardiology, Neurology, Orthopedics, Oncology, Pediatrics, ENT, Gastroenterology, General Medicine
+- Services: Cardiology, Orthopedics, Oncology, Neurology, Gastroenterology, Nephrology, Urology, Pulmonology, Pediatrics, OBG, ENT, Emergency & Critical Care, Organ Transplant
 
-### 2. Apollo Speciality Hospitals, Teynampet
-- Address: 320, Anna Salai, Teynampet, Chennai - 600018
-- Phone: +91-44-24336161
+### 2. Apollo Hospitals, Ramnagar
+- Address: 10-50-80, Waltair Main Road, Ram Nagar, Visakhapatnam - 530002
+- Phone: +91-891-2562001
 - Timings: Weekday 07:00 - 21:00, Weekend 07:00 - 17:00
 - Emergency: 24x7
-- Services: Cardiology, Gastroenterology, Nephrology, Dermatology, ENT, Ophthalmology, Neurology
-
-### 3. Apollo Clinic, Velachery
-- Address: 22, 3rd Cross Road, Velachery, Chennai - 600042
-- Phone: +91-44-49049999
-- Timings: Weekday 08:00 - 20:00, Weekend 08:00 - 14:00
-- Emergency: Not available
-- Services: General Medicine, Pediatrics, Dermatology, ENT, Orthopedics, Gynecology
-
-### 4. Apollo Hospitals, OMR Road
-- Address: Plot No 1, Thiruvannmiyur, OMR Road, Chennai - 600041
-- Phone: +91-44-24502100
-- Timings: Weekday 06:00 - 22:00, Weekend 06:00 - 18:00
-- Emergency: 24x7
-- Services: Cardiology, Neurology, Orthopedics, Pediatrics, Gynecology, Pulmonology, Gastroenterology
+- Services: Cardiology, Nephrology, Urology, General Medicine, Critical Care, Daycare Surgery, Trauma Care
 
 ## Departments
-
-1. **Cardiology** - Heart care including diagnostics, interventional cardiology, and cardiac surgery
-2. **Orthopedics** - Bone, joint, and spine care including joint replacement and sports medicine
-3. **Dermatology** - Skin, hair, and nail care including cosmetic dermatology
-4. **Pediatrics** - Child healthcare from newborn to adolescent
-5. **General Medicine** - Primary care, internal medicine, and preventive healthcare
-6. **ENT** - Ear, nose, and throat care including head and neck surgery
-7. **Ophthalmology** - Eye care including cataract surgery, LASIK, and retina services
-8. **Gastroenterology** - Digestive system care including endoscopy and liver care
-9. **Neurology** - Brain, spine, and nervous system care including stroke management
-10. **Gynecology and Obstetrics** - Womens health including prenatal care, maternity, and reproductive medicine
-11. **Nephrology** - Kidney care including dialysis and kidney transplant
-12. **Pulmonology** - Respiratory care including asthma, COPD, and sleep disorders
-13. **Oncology** - Cancer care including medical, surgical, and radiation oncology
-14. **Psychiatry** - Mental health care including therapy and psychiatric consultations
+Cardiology, Orthopedics, Dermatology, Pediatrics, General Medicine, ENT, Ophthalmology, Gastroenterology, Neurology, Gynecology & Obstetrics, Nephrology, Pulmonology, Oncology, Psychiatry, Urology
 
 ## Common FAQs
 
 Q: What are the OPD timings?
-A: Our OPD operates from 6:00 AM to 10:00 PM on weekdays and 6:00 AM to 6:00 PM on weekends at our main branches.
-
-Q: How do I book an appointment?
-A: You can call our AI receptionist, visit our website, or walk in to any branch. The AI receptionist can help book, reschedule, or cancel appointments.
+A: Arilova: 6 AM-10 PM weekdays, 6 AM-6 PM weekends. Ramnagar: 7 AM-9 PM weekdays, 7 AM-5 PM weekends.
 
 Q: What is the consultation fee?
-A: Consultation fees vary by doctor, typically ranging from Rs.500 to Rs.1500 for senior specialists.
-
-Q: Is parking available?
-A: Yes, all our major branches have parking facilities available for patients and visitors.
-
-Q: Do you accept insurance?
-A: Yes, we accept most major insurance plans. Please check with our billing desk or call ahead to verify your coverage.
+A: Typically Rs.500 to Rs.3,000. Most doctors at Vizag charge Rs.1,900.
 
 Q: Do you have emergency services?
-A: Yes, our main hospitals (Greams Road, Teynampet, OMR Road) have 24x7 emergency services. Clinics do not have emergency services.
+A: Yes, both branches have 24x7 emergency.
 
-Q: What are the visiting hours?
-A: Visiting hours are generally 6:00 AM to 8:00 PM. ICU visitation may have different timings.
+Q: Do you accept insurance?
+A: Yes, most major insurance plans are accepted.
 
-Q: Can I cancel or reschedule my appointment?
-A: Yes, you can call our AI receptionist to cancel or reschedule appointments. Please provide your phone number to locate your booking.
-
-Q: What languages are your doctors fluent in?
-A: Most doctors speak English, Tamil, and Hindi. Many also speak Telugu, Malayalam, and other regional languages.
+Q: What languages do doctors speak?
+A: English, Telugu, Hindi. Some speak Tamil and Kannada.
 
 Q: Do you have ambulance services?
-A: Yes, we have 24x7 ambulance services at all our hospital locations. Basic life support and advanced life support ambulances are available.
+A: Yes, 24x7 at both branches. Call 1066 for emergency.
 
 Q: Can I get a teleconsultation?
-A: Yes, Apollo offers teleconsultation services. You can book a video consultation with our doctors through our website or app.
+A: Yes, via our website or app.
 
-Q: Do you have a pharmacy open 24 hours?
-A: Yes, the Apollo pharmacy at all our hospital locations is open 24x7.
+Q: Is parking available?
+A: Yes, at both branches.
+
+Q: Do you have a 24-hour pharmacy?
+A: Yes, at both hospital locations.
 
 ## Appointment Booking Flow
-
-1. Patient calls and identifies themselves
-2. AI asks for specialty/department needed
-3. AI checks available doctors using check_doctor tool
-4. AI offers available slots using check_slot tool
+1. Greet patient and identify intent
+2. Ask for specialty/department needed
+3. Use check_doctor tool to find available doctors
+4. Use check_slot tool for available times
 5. Patient confirms date and time
-6. AI books appointment using create_appointment tool
-7. AI confirms booking details and gives reference
+6. Use create_appointment tool to book (via POST /api/bookings/voice-book)
+7. Confirm booking details
 
 ## Important Notes
-
-- Always confirm patient phone number for records
-- Remind patients to arrive 15 minutes early for new appointments
-- For emergencies, direct patients to nearest 24x7 branch
-- If AI cannot help, offer human handoff using request_human_handoff tool
-- Consultation fees are to be paid at the hospital
+- Most doctors available Mon-Sat
+- Doctors primarily speak English and Telugu
+- For emergencies, direct to nearest 24x7 emergency
+- Offer human handoff if AI cannot help
+- Consultation fees paid at hospital

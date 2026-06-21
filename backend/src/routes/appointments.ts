@@ -4,15 +4,22 @@ import { logger } from '../logger';
 
 const router = Router();
 
-// GET /api/appointments - List appointments (optional filters: phone, date, status)
+// GET /api/appointments - List appointments (optional filters: phone, name, date, status)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { phone, date, status } = req.query;
+    const { phone, name, date, status } = req.query;
 
     const where: Record<string, unknown> = {};
 
     if (phone) {
       const patient = await prisma.patient.findUnique({ where: { phone: phone as string } });
+      if (patient) {
+        where.patientId = patient.id;
+      } else {
+        return res.json({ success: true, data: [] });
+      }
+    } else if (name) {
+      const patient = await prisma.patient.findFirst({ where: { name: name as string } });
       if (patient) {
         where.patientId = patient.id;
       } else {
