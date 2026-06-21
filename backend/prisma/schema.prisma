@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Branch {
@@ -12,8 +13,8 @@ model Branch {
   name      String
   address   String?
   phone     String?
-  timings   String?  // JSON: {"weekday": "08:00-20:00", "weekend": "09:00-17:00"}
-  services  String   // JSON array stringified
+  timings   String?  @db.Text
+  services  String   @db.Text
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -43,11 +44,11 @@ model Doctor {
   specialty       String
   experience      Int?
   consultationFee Float?
-  languages       String   // JSON array stringified: ["English","Tamil"]
-  availableDays   String   // JSON array stringified: ["Monday","Tuesday"]
-  qualifications  String   // JSON array stringified
-  profileImage    String?
-  bio             String?
+  languages       String  @db.Text
+  availableDays   String  @db.Text
+  qualifications  String  @db.Text
+  profileImage    String? @db.Text
+  bio             String? @db.Text
   branchId        String
   branch          Branch   @relation(fields: [branchId], references: [id])
   departmentId    String
@@ -90,11 +91,11 @@ model Appointment {
   branchId   String
   branch     Branch   @relation(fields: [branchId], references: [id])
   date       DateTime
-  time       String   // "10:30"
-  status     String   @default("scheduled") // scheduled, completed, cancelled, rescheduled, no_show
-  reason     String?
-  notes      String?
-  source     String   @default("manual") // manual, ai, phone
+  time       String
+  status     String   @default("scheduled")
+  reason     String? @db.Text
+  notes      String? @db.Text
+  source     String   @default("manual")
   callLogId  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -109,21 +110,21 @@ model Appointment {
 
 model CallLog {
   id             String   @id @default(cuid())
-  callId         String   @unique // Bolna call ID
-  sessionId      String?  // Unique session identifier for frontend tracking
+  callId         String   @unique
+  sessionId      String?
   phone          String
   direction      String   @default("inbound")
-  status         String   @default("completed") // connecting, active, processing, completed, failed, missed, incomplete
-  duration       Int?     // seconds
+  status         String   @default("completed")
+  duration       Int?
   intent         String?
-  summary        String?
-  operation      String?  // Current operation: "checking_doctor", "booking", etc.
-  transcript     String?  // Accumulated transcript JSON stringified
-  partialSession Boolean  @default(false) // true if call disconnected unexpectedly
-  errorLog       String?  // JSON array of errors
+  summary        String? @db.Text
+  operation      String?
+  transcript     String? @db.Text
+  partialSession Boolean  @default(false)
+  errorLog       String? @db.Text
   patientId      String?
   patient        Patient? @relation(fields: [patientId], references: [id])
-  metadata       String?  // JSON string
+  metadata       String? @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -144,8 +145,8 @@ model CallEvent {
   sessionId String
   callLogId String?
   callLog   CallLog? @relation(fields: [callLogId], references: [id])
-  eventType String   // status_update, transcript, operation, error, summary
-  payload   String   // JSON
+  eventType String
+  payload   String   @db.Text
   createdAt DateTime @default(now())
 
   @@index([sessionId, createdAt])
@@ -158,20 +159,19 @@ model ConversationSummary {
   callLog        CallLog  @relation(fields: [callLogId], references: [id])
   patientId      String?
   patient        Patient? @relation(fields: [patientId], references: [id])
-  patientName    String?
-  intent         String?
-  doctor         String?
-  department     String?
-  branch         String?
-  appointmentTime String?
-  outcome        String?  // booked, rescheduled, cancelled, handoff, faq, incomplete
+  patientName    String? @db.Text
+  intent         String? @db.Text
+  doctor         String? @db.Text
+  department     String? @db.Text
+  branch         String? @db.Text
+  appointmentTime String? @db.Text
+  outcome        String? @db.Text
   callDuration   Int?
-  summary        String?
+  summary        String? @db.Text
   createdAt      DateTime @default(now())
 
   @@map("conversation_summaries")
 }
-
 
 model HumanFollowup {
   id        String   @id @default(cuid())
@@ -180,8 +180,8 @@ model HumanFollowup {
   patientId String
   patient   Patient  @relation(fields: [patientId], references: [id])
   reason    String
-  notes     String?
-  status    String   @default("pending") // pending, contacted, resolved
+  notes     String? @db.Text
+  status    String   @default("pending")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -192,8 +192,8 @@ model WebhookEvent {
   id        String   @id @default(cuid())
   callLogId String?
   callLog   CallLog? @relation(fields: [callLogId], references: [id])
-  eventType String   // call_started, call_completed, booking
-  payload   String?  // JSON string
+  eventType String
+  payload   String? @db.Text
   processed Boolean  @default(false)
   createdAt DateTime @default(now())
 
@@ -206,8 +206,8 @@ model AppointmentSlot {
   doctorId  String
   doctor    Doctor   @relation(fields: [doctorId], references: [id])
   date      DateTime
-  time      String   // "10:00"
-  status    String   @default("available") // available, booked, blocked
+  time      String
+  status    String   @default("available")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -220,9 +220,9 @@ model EvaluationResult {
   id            String   @id @default(cuid())
   scenario      String
   passed        Boolean
-  executionTime Int?     // ms
-  outcome       String?
-  details       String?  // JSON string
+  executionTime Int?
+  outcome       String? @db.Text
+  details       String? @db.Text
   createdAt     DateTime @default(now())
 
   @@map("evaluation_results")
