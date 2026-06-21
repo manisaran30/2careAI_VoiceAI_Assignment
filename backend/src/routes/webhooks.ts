@@ -126,6 +126,10 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'callId is required' });
     }
 
+    // Parse extracted_data from Bolna if available
+    const extracted = req.body.extracted_data;
+    const subjectiveSummary = extracted?.General?.['Call Summary']?.subjective || null;
+
     let callLog = await prisma.callLog.findUnique({ where: { callId } });
     if (!callLog) {
       callLog = await prisma.callLog.create({
@@ -137,7 +141,7 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
           status: 'completed',
           duration: duration || null,
           intent: intent || null,
-          summary: summary || null,
+          summary: subjectiveSummary || summary || null,
         },
       });
     }
@@ -152,25 +156,45 @@ router.post('/bolna/call-completed', async (req: Request, res: Response) => {
           status: 'completed',
           duration: duration || null,
           intent: intent || null,
-          summary: summary || null,
+          summary: subjectiveSummary || summary || null,
         },
       }),
       'Webhooks.call-completed'
     );
+
+    // Fetch appointment data to populate summary fields when Bolna doesn't send structured data
+    let appointmentDoctor: string | null = null;
+    let appointmentBranch: string | null = null;
+    let appointmentTimeStr: string | null = null;
+    try {
+      const appt = await prisma.appointment.findFirst({
+        where: { callLogId: callLog.id },
+        include: { doctor: { select: { name: true } }, branch: { select: { name: true } } },
+      });
+      if (appt) {
+        appointmentDoctor = appt.doctor.name;
+        appointmentBranch = appt.branch.name;
+        appointmentTimeStr = appt.time ? `${appt.date.toISOString().split('T')[0]} ${appt.time}` : null;
+      }
+    } catch { /* ignore */ }
+
+    // Derive intent from callLog operation if not in payload
+    const resolvedIntent = intent || callLog.intent || callLog.operation || null;
+    const resolvedOutcome = outcome || 'completed';
 
     // Upsert conversation summary
     const summaryData = {
       callLogId: callLog.id,
       patientId: callLog.patientId || undefined,
       patientName: patientName || null,
-      intent: intent || null,
-      doctor: doctor || null,
+      intent: resolvedIntent,
+      doctor: doctor || appointmentDoctor || null,
       department: department || null,
-      branch: branch || null,
-      appointmentTime: appointmentTime || null,
-      outcome: outcome || null,
+      branch: branch || appointmentBranch || null,
+      appointmentTime: appointmentTime || appointmentTimeStr || null,
+      outcome: resolvedOutcome,
       callDuration: duration || null,
-      summary: summary || null,
+      summary: subjectiveSummary || summary || null,
     };
 
     const existingSummary = await prisma.conversationSummary.findUnique({

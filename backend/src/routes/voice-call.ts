@@ -259,13 +259,26 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
           summary: cs.summary,
         };
       } else {
+        // Try to populate from appointment data if available
+        let aptSummary = '';
+        try {
+          const appt = await prisma.appointment.findFirst({
+            where: { callLogId: callLog.id },
+            include: { doctor: { select: { name: true } }, branch: { select: { name: true } } },
+          });
+          if (appt) {
+            const dateStr = appt.date.toISOString().split('T')[0];
+            aptSummary = `Appointment booked with Dr. ${appt.doctor.name} at ${appt.branch.name} on ${dateStr} at ${appt.time}.`;
+          }
+        } catch { /* ignore */ }
+
         const minimalSummary = {
           callLogId: callLog.id,
           patientId: callLog.patientId || undefined,
           patientName: fullData?.patient?.name || null,
           callDuration: duration,
           outcome: 'completed',
-          summary: 'Call ended by user before summary was generated.',
+          summary: aptSummary || 'Call ended by user before summary was generated.',
         };
         await prisma.conversationSummary.create({ data: minimalSummary }).catch(() => {});
         summaryData = {

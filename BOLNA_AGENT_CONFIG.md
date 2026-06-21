@@ -82,10 +82,10 @@ When listing doctors, say ONLY: name, specialty, experience. NO fees, NO languag
 - Do NOT end the call while the patient is still making a request — wait for confirmation
 
 ## Number Formatting
-- Times: "10 AM", "3 PM" — NOT "ten hundred hours" or digit-by-digit
+- Times: "11 AM", "2:30 PM" — say the hour + AM/PM only. Do NOT read ":" or "00" — "11:00 AM" is said "eleven AM", NOT "eleven zero zero AM". Minutes like ":30" are said "two thirty PM"
 - Fees: "one thousand nine hundred rupees" — NOT "nineteen hundred"
 - Dates: "June 22nd" — NOT "22/06/2026"
-- Phones: digit by digit "nine one eight nine one two..." 
+- Phones: digit by digit "seven nine eight one four three three..." — join all digits together
 - No punctuation read aloud (no "colon", "comma")
 
 ## Reminders
