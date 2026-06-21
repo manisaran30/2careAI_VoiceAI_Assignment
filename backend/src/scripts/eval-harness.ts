@@ -167,10 +167,15 @@ async function isServerRunning(): Promise<boolean> {
 
 // ── API-mode helpers ─────────────────────────────────────────────────────────
 
-async function getServiceableDoctor(usedIds: Set<string>): Promise<{ id: string; branchId: string } | null> {
-  const r = await apiGet('/api/doctors');
-  if (!r.data?.data) return null;
-  const available = r.data.data.find((d: any) => !usedIds.has(d.id));
+async function getServiceableDoctor(usedIds: Set<string>, useApi: boolean): Promise<{ id: string; branchId: string } | null> {
+  if (useApi) {
+    const r = await apiGet('/api/doctors');
+    if (!r.data?.data) return null;
+    const available = r.data.data.find((d: any) => !usedIds.has(d.id));
+    return available ? { id: available.id, branchId: available.branchId } : null;
+  }
+  const docs = await prisma.doctor.findMany({ take: 50 });
+  const available = docs.find((d) => !usedIds.has(d.id));
   return available ? { id: available.id, branchId: available.branchId } : null;
 }
 
@@ -226,7 +231,7 @@ async function dimensionE2E(useApi: boolean): Promise<TestResult[]> {
 
   // 1d. Check slots
   results.push(await runTest('Slot Availability Check', async () => {
-    const doctor = await getServiceableDoctor(usedDoctors);
+    const doctor = await getServiceableDoctor(usedDoctors, useApi);
     if (!doctor) return { passed: false, details: { error: 'No doctor found' } };
     if (useApi) {
       const r = await apiPost('/api/slots/availability', { doctorId: doctor.id });
@@ -237,7 +242,7 @@ async function dimensionE2E(useApi: boolean): Promise<TestResult[]> {
 
   // 1e. Book appointment (simulates what Bolna's booking webhook does)
   results.push(await runTest('Book Appointment (voice-book)', async () => {
-    const doctor = await getServiceableDoctor(usedDoctors);
+    const doctor = await getServiceableDoctor(usedDoctors, useApi);
     if (!doctor || !patientId) return { passed: false, details: { error: 'No doctor or patient' } };
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -565,20 +570,55 @@ async function dimensionConversation(useApi: boolean): Promise<TestResult[]> {
       return { passed: succeeded <= 1, details: { succeeded, failed, note: succeeded <= 1 ? 'Race protection working' : 'Race condition detected' } };
     }
 
-    // Direct mode: create a slot, try to book it twice
+    // Direct mode: test the actual voice-book logic using slots + $transaction
     const doctor = await prisma.doctor.findFirst({ where: { isActive: true } });
     if (!doctor) return { passed: true, details: { note: 'No doctor for concurrency test' } };
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
 
     const p1 = await prisma.patient.create({ data: { name: 'Race A', phone: testPhone1 } });
     const p2 = await prisma.patient.create({ data: { name: 'Race B', phone: testPhone2 } });
 
-    // Try parallel creates
+    // Ensure a slot exists for this doctor
+    await prisma.appointmentSlot.upsert({
+      where: { id: `race-test-slot-${doctor.id}` },
+      update: { status: 'available' },
+      create: {
+        id: `race-test-slot-${doctor.id}`,
+        doctorId: doctor.id,
+        date: tomorrow,
+        time: '10:00',
+        status: 'available',
+      },
+    });
+
+    // Try concurrent atomic slot claiming (same logic as voice-book endpoint)
+    const slot = await prisma.appointmentSlot.findFirst({ where: { doctorId: doctor.id, time: '10:00', status: 'available' } });
+    if (!slot) return { passed: false, details: { note: 'No slot found' } };
+
     const [a1, a2] = await Promise.allSettled([
-      prisma.appointment.create({ data: { patientId: p1.id, doctorId: doctor.id, branchId: doctor.branchId, date: tomorrow, time: '10:00', reason: 'Race A', source: 'evaluation' } }),
-      prisma.appointment.create({ data: { patientId: p2.id, doctorId: doctor.id, branchId: doctor.branchId, date: tomorrow, time: '10:00', reason: 'Race B', source: 'evaluation' } }),
+      prisma.$transaction(async (tx) => {
+        const updated = await tx.appointmentSlot.updateMany({
+          where: { id: slot.id, status: 'available' },
+          data: { status: 'booked' },
+        });
+        if (updated.count === 0) throw new Error('Slot already booked');
+        return tx.appointment.create({
+          data: { patientId: p1.id, doctorId: doctor.id, branchId: doctor.branchId, date: tomorrow, time: '10:00', reason: 'Race A', source: 'evaluation' },
+        });
+      }),
+      prisma.$transaction(async (tx) => {
+        const updated = await tx.appointmentSlot.updateMany({
+          where: { id: slot.id, status: 'available' },
+          data: { status: 'booked' },
+        });
+        if (updated.count === 0) throw new Error('Slot already booked');
+        return tx.appointment.create({
+          data: { patientId: p2.id, doctorId: doctor.id, branchId: doctor.branchId, date: tomorrow, time: '10:00', reason: 'Race B', source: 'evaluation' },
+        });
+      }),
     ]);
 
     const succeeded = [a1, a2].filter(r => r.status === 'fulfilled').length;
