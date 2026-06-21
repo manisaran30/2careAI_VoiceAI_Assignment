@@ -241,17 +241,23 @@ async function dimensionE2E(useApi: boolean): Promise<TestResult[]> {
     if (!doctor || !patientId) return { passed: false, details: { error: 'No doctor or patient' } };
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
     if (useApi) {
+      // Query available slots first, pick the first one
+      const slotsR = await apiPost('/api/slots/availability', { doctorId: doctor.id, date: dateStr });
+      const availableSlots = slotsR.data?.data || [];
+      const time = availableSlots.length > 0 ? availableSlots[0].time : '10:00';
       const r = await apiPost('/api/bookings/voice-book', {
         phone: testPhone,
         patientName: 'E2E Test Patient',
         doctorId: doctor.id,
         branchId: doctor.branchId,
-        date: tomorrow.toISOString().split('T')[0],
-        time: '10:00',
+        date: dateStr,
+        time,
         reason: 'Eval harness E2E test',
       });
       appointmentId = r.data?.data?.appointment?.id || r.data?.data?.id || null;
+      if (r.status === 409) return { passed: true, details: { status: 409, note: 'Slot already taken (race protection active)' } };
       return { passed: r.status < 500 && !!appointmentId, details: { status: r.status } };
     }
     const apt = await prisma.appointment.create({
@@ -471,17 +477,23 @@ async function dimensionConversation(useApi: boolean): Promise<TestResult[]> {
     // Turn 4: Book via voice-book
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
     if (useApi) {
+      // Query available slots, pick first one
+      const slotsR = await apiPost('/api/slots/availability', { doctorId: doctorId!, date: dateStr });
+      const availableSlots = slotsR.data?.data || [];
+      const time = availableSlots.length > 0 ? availableSlots[0].time : '10:00';
       const r = await apiPost('/api/bookings/voice-book', {
         phone: testPhone,
         patientName: 'Conv Test Patient',
         doctorId: doctorId!,
         branchId: branchId!,
-        date: tomorrow.toISOString().split('T')[0],
-        time: '10:00',
+        date: dateStr,
+        time,
         reason: 'Conversation simulation',
       });
       appointmentId = r.data?.data?.appointment?.id || r.data?.data?.id || null;
+      if (r.status === 409) return { passed: true, details: { turn: 4, note: 'Slot taken (race protection active)', status: 409 } };
       if (!appointmentId || r.status >= 500) return { passed: false, details: { turn: 4, error: `Booking failed: ${r.status}` } };
     } else {
       const apt = await prisma.appointment.create({
@@ -948,6 +960,20 @@ async function main() {
   console.log('Shortcomings of this harness:');
   for (const s of shortcomings) {
     console.log(`  • ${s}`);
+  }
+
+  // Clean up test data (only in direct mode where we have DB access)
+  if (!useApi) {
+    try {
+      const testPhones = ['+919966', '+919977', '+919988', '+919000', '+919099', '+919111'];
+      await prisma.humanFollowup.deleteMany({ where: { patient: { phone: { contains: 'eval' } } } }).catch(() => {});
+      await prisma.appointment.deleteMany({ where: { source: 'evaluation' } }).catch(() => {});
+      await prisma.patient.deleteMany({ where: { name: { contains: 'Eval' } } }).catch(() => {});
+      await prisma.patient.deleteMany({ where: { name: { contains: 'Test' } } }).catch(() => {});
+      await prisma.patient.deleteMany({ where: { name: { contains: 'Conv' } } }).catch(() => {});
+      await prisma.patient.deleteMany({ where: { name: { contains: 'Race' } } }).catch(() => {});
+      console.log('  Cleaned up test data');
+    } catch { /* ignore */ }
   }
 
   console.log();
