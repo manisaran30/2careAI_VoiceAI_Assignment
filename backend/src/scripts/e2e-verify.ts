@@ -106,26 +106,26 @@ async function testFullFlow() {
 
   // Check call_log
   const updatedCallLog = await prisma.callLog.findUnique({ where: { id: callLog.id } });
-  allOk &= await verify(updatedCallLog?.status === 'completed', 'CallLog status is "completed"');
-  allOk &= await verify(updatedCallLog?.duration === 120, `CallLog duration is ${duration}`);
+  allOk = allOk && await verify(updatedCallLog?.status === 'completed', 'CallLog status is "completed"');
+  allOk = allOk && await verify(updatedCallLog?.duration === 120, `CallLog duration is ${duration}`);
 
   // Check conversation_summary
   const summary = await prisma.conversationSummary.findUnique({ where: { callLogId: callLog.id } });
-  allOk &= await verify(summary !== null, 'ConversationSummary record exists');
-  allOk &= await verify(summary?.callLogId === callLog.id, 'ConversationSummary linked to callLog');
-  allOk &= await verify(summary?.patientId === patient.id, 'ConversationSummary linked to patient');
-  allOk &= await verify(summary?.callDuration === 120, 'ConversationSummary has correct duration');
-  allOk &= await verify(summary?.intent === 'book_appointment', 'ConversationSummary has intent');
+  allOk = allOk && await verify(summary !== null, 'ConversationSummary record exists');
+  allOk = allOk && await verify(summary?.callLogId === callLog.id, 'ConversationSummary linked to callLog');
+  allOk = allOk && await verify(summary?.patientId === patient.id, 'ConversationSummary linked to patient');
+  allOk = allOk && await verify(summary?.callDuration === 120, 'ConversationSummary has correct duration');
+  allOk = allOk && await verify(summary?.intent === 'book_appointment', 'ConversationSummary has intent');
 
   // Check webhook_events
   const webhookEvents = await prisma.webhookEvent.findMany({ where: { callLogId: callLog.id } });
-  allOk &= await verify(webhookEvents.length === 2, `2 webhookEvents recorded (found ${webhookEvents.length})`);
-  allOk &= await verify(webhookEvents.some(e => e.eventType === 'call_started'), 'call_started webhookEvent exists');
-  allOk &= await verify(webhookEvents.some(e => e.eventType === 'call_completed'), 'call_completed webhookEvent exists');
+  allOk = allOk && await verify(webhookEvents.length === 2, `2 webhookEvents recorded (found ${webhookEvents.length})`);
+  allOk = allOk && await verify(webhookEvents.some(e => e.eventType === 'call_started'), 'call_started webhookEvent exists');
+  allOk = allOk && await verify(webhookEvents.some(e => e.eventType === 'call_completed'), 'call_completed webhookEvent exists');
 
   // Check call_events (handleExecutionUpdate only creates webhookEvent, not callEvent for status updates)
   const callEvents = await prisma.callEvent.findMany({ where: { callLogId: callLog.id } });
-  allOk &= await verify(callEvents.length === 1, `callEvents recorded for started event (found ${callEvents.length} — 1 expected as execution-update handler creates webhookEvent, not callEvent)`);
+  allOk = allOk && await verify(callEvents.length === 1, `callEvents recorded for started event (found ${callEvents.length} — 1 expected as execution-update handler creates webhookEvent, not callEvent)`);
 
   return allOk;
 }
@@ -199,17 +199,17 @@ async function testCallCompletedFlow() {
   let allOk = true;
 
   const summary = await prisma.conversationSummary.findUnique({ where: { callLogId: callLog.id } });
-  allOk &= await verify(summary !== null, 'ConversationSummary record exists');
-  allOk &= await verify(summary?.intent === 'cancel_appointment', 'Summary has correct intent');
-  allOk &= await verify(summary?.outcome === 'cancelled', 'Summary has correct outcome');
-  allOk &= await verify(summary?.doctor === 'Dr. Test', 'Summary has doctor info');
-  allOk &= await verify(summary?.department === 'Cardiology', 'Summary has department info');
+  allOk = allOk && await verify(summary !== null, 'ConversationSummary record exists');
+  allOk = allOk && await verify(summary?.intent === 'cancel_appointment', 'Summary has correct intent');
+  allOk = allOk && await verify(summary?.outcome === 'cancelled', 'Summary has correct outcome');
+  allOk = allOk && await verify(summary?.doctor === 'Dr. Test', 'Summary has doctor info');
+  allOk = allOk && await verify(summary?.department === 'Cardiology', 'Summary has department info');
 
   const webhookEvents = await prisma.webhookEvent.findMany({ where: { callLogId: callLog.id } });
-  allOk &= await verify(webhookEvents.length === 2, `2 webhookEvents recorded (found ${webhookEvents.length})`);
+  allOk = allOk && await verify(webhookEvents.length === 2, `2 webhookEvents recorded (found ${webhookEvents.length})`);
 
   const callEvents = await prisma.callEvent.findMany({ where: { callLogId: callLog.id } });
-  allOk &= await verify(callEvents.length >= 1, `callEvents recorded (found ${callEvents.length})`);
+  allOk = allOk && await verify(callEvents.length >= 1, `callEvents recorded (found ${callEvents.length})`);
 
   return allOk;
 }
@@ -269,12 +269,12 @@ async function testUserEndedFlow() {
   let allOk = true;
 
   const summary = await prisma.conversationSummary.findUnique({ where: { callLogId: callLog.id } });
-  allOk &= await verify(summary !== null, 'ConversationSummary record exists');
-  allOk &= await verify(summary?.callDuration === 65, 'Summary has correct duration');
-  allOk &= await verify(summary?.outcome === 'completed', 'Summary has correct outcome');
+  allOk = allOk && await verify(summary !== null, 'ConversationSummary record exists');
+  allOk = allOk && await verify(summary?.callDuration === 65, 'Summary has correct duration');
+  allOk = allOk && await verify(summary?.outcome === 'completed', 'Summary has correct outcome');
 
   const webhookEvents = await prisma.webhookEvent.findMany({ where: { callLogId: callLog.id } });
-  allOk &= await verify(webhookEvents.length >= 1, `webhookEvents recorded (found ${webhookEvents.length})`);
+  allOk = allOk && await verify(webhookEvents.length >= 1, `webhookEvents recorded (found ${webhookEvents.length})`);
 
   return allOk;
 }
@@ -290,15 +290,15 @@ async function testOrphanedRecords() {
     where: { callLogId: { not: undefined } },
   });
 
-  allOk &= await verify(orphanWebhooks === 0, `No orphan webhook_events (found ${orphanWebhooks})`);
-  allOk &= await verify(orphanEvents === 0, `No orphan call_events (found ${orphanEvents})`);
+  allOk = allOk && await verify(orphanWebhooks === 0, `No orphan webhook_events (found ${orphanWebhooks})`);
+  allOk = allOk && await verify(orphanEvents === 0, `No orphan call_events (found ${orphanEvents})`);
 
   // Check conversation summaries have linked callLogs (by finding one where callLog doesn't exist)
   const summaryCount = await prisma.conversationSummary.count({});
   const badSummaries = summaryCount > 0
     ? await prisma.conversationSummary.findFirst({ where: { callLogId: { not: undefined } } })
     : null;
-  allOk &= await verify(summaryCount === 0 || badSummaries !== null, 'Conversation summaries have linked callLogs');
+  allOk = allOk && await verify(summaryCount === 0 || badSummaries !== null, 'Conversation summaries have linked callLogs');
 
   return allOk;
 }
@@ -311,14 +311,14 @@ async function main() {
   await cleanup();
 
   let allPassed = true;
-  allPassed &= await testFullFlow();
-  allPassed &= await testCallCompletedFlow();
-  allPassed &= await testUserEndedFlow();
+  allPassed = allPassed && await testFullFlow();
+  allPassed = allPassed && await testCallCompletedFlow();
+  allPassed = allPassed && await testUserEndedFlow();
 
   // Clean up test data after tests
   await cleanup();
   
-  allPassed &= await testOrphanedRecords();
+  allPassed = allPassed && await testOrphanedRecords();
 
   console.log('\n============================================================');
   if (allPassed) {
