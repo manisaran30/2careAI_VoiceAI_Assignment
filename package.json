@@ -1,16 +1,11 @@
 {
   "name": "healthcare-ai-assignment",
   "private": true,
-  "workspaces": [
-    "backend",
-    "frontend",
-    "scraper"
-  ],
   "scripts": {
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "dev": "npm run dev:backend & npm run dev:frontend",
-    "build": "npm run build --workspace=frontend",
-    "db:seed": "npm run db:seed --workspace=backend"
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev": "cd backend && npm run dev & cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "db:seed": "cd backend && npm run db:seed"
   }
 }
