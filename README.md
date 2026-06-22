@@ -3,7 +3,7 @@
 An AI-powered voice receptionist for Apollo Hospitals Visakhapatnam. Patients call in and converse naturally with the AI to book, reschedule, or cancel appointments, find the right doctor, and get hospital information. Built with **Next.js 16**, **Express**, **Prisma**, and **Bolna Voice AI**.
 
 **Deployed backend**: https://apollo-ai-backend-0jmd.onrender.com  
-**Frontend**: http://localhost:3000 (dev) / Vercel (production)
+**Frontend**: http://localhost:3000 (dev) / [https://2care-ai-voice-ai-assignment.vercel.app/](https://2care-ai-voice-ai-assignment.vercel.app/) (production)
 
 ---
 
