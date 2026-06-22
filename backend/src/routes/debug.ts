@@ -134,23 +134,6 @@ router.get('/test-recent', async (_req: Request, res: Response) => {
   }
 });
 
-router.post('/clear-all', async (_req: Request, res: Response) => {
-  try {
-    await prisma.callEvent.deleteMany({});
-    await prisma.webhookEvent.deleteMany({});
-    await prisma.conversationSummary.deleteMany({});
-    await prisma.humanFollowup.deleteMany({});
-    await prisma.appointment.deleteMany({});
-    await prisma.appointmentSlot.deleteMany({});
-    await prisma.callLog.deleteMany({});
-    await prisma.evaluationResult.deleteMany({});
-    await prisma.patient.deleteMany({});
-    res.json({ success: true, message: 'All tables cleared' });
-  } catch (error) {
-    res.status(500).json({ success: false, error: String(error) });
-  }
-});
-
 router.get('/db-check', async (_req: Request, res: Response) => {
   try {
     const hasDbUrl = !!process.env.DATABASE_URL;
