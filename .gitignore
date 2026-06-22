@@ -12,3 +12,5 @@ uploads/
 **/dev.db-journal
 .kilo/
 eval-results-*.json
+*.md
+!/README.md
