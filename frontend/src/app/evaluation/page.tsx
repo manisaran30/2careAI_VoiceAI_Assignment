@@ -80,7 +80,7 @@ export default function EvaluationPage() {
                     </span>
                     <span className="text-muted">{last.executionTime}ms</span>
                     <span className="text-muted flex-1">{last.outcome}</span>
-                    <span className="text-xs text-muted">{new Date(last.createdAt).toLocaleTimeString()}</span>
+                    <span className="text-xs text-muted">{new Date(last.createdAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
                   </div>
                 )}
               </div>
@@ -101,7 +101,7 @@ export default function EvaluationPage() {
                   <span className="w-40 font-medium capitalize">{r.scenario.replace(/_/g, " ")}</span>
                   <span className="text-muted">{r.executionTime}ms</span>
                   <span className="flex-1 text-muted truncate">{r.outcome || "—"}</span>
-                  <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleString()}</span>
+                  <span className="text-xs text-muted">{new Date(r.createdAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                 </div>
               ))}
             </div>

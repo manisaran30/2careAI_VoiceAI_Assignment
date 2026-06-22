@@ -37,9 +37,9 @@ export default function Home() {
       {/* Stats */}
       <section className="rounded-xl border border-border bg-card p-8 text-center">
         <p className="text-muted text-sm">Built for</p>
-        <p className="text-2xl font-bold mt-1">Apollo Hospitals, Chennai</p>
+        <p className="text-2xl font-bold mt-1">Apollo Hospitals, Vishakapatnam</p>
         <p className="text-muted text-sm mt-2">
-          4 branches · 10 departments · 21 doctors · 24x7 AI receptionist
+          2 branches · 15 departments · 50 doctors · 24x7 AI receptionist
         </p>
       </section>
     </div>

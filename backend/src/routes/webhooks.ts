@@ -38,6 +38,18 @@ router.post('/bolna', async (req: Request, res: Response) => {
     const body = req.body;
     const loggerCtx = 'Webhooks.unified';
 
+    // Normalize various Bolna payload formats
+    if (!body.callId && !body.execution_id && body.id) {
+      body.callId = body.id;
+      logger.info(loggerCtx, 'Normalized: mapped body.id → callId', { callId: body.id });
+    }
+    if (body.duration === undefined && body.conversation_duration !== undefined) {
+      body.duration = body.conversation_duration;
+    }
+    if (!body.sessionId && body.context_details?.recipient_data?.sessionId) {
+      body.sessionId = body.context_details.recipient_data.sessionId;
+    }
+
     // Detect event type by checking payload fields
     if (body.text) {
       logger.info(loggerCtx, 'Routing to transcript handler');
