@@ -199,7 +199,6 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
       }
     }
 
-    // Update DB — create CallEvent, WebhookEvent, and ConversationSummary alongside
     const callLog = await prisma.callLog.findFirst({ where: { sessionId } });
     const duration = session.startTime ? Math.floor((Date.now() - session.startTime) / 1000) : null;
 
@@ -211,10 +210,8 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
         }),
         'VoiceCall.end'
       ).catch(() => {});
-    }
 
-    // Create status_update CallEvent for lifecycle tracking
-    if (callLog) {
+      // Create CallEvent for lifecycle tracking
       prisma.callEvent.create({
         data: {
           sessionId,
@@ -223,10 +220,8 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
           payload: JSON.stringify({ status: 'completed', duration, message: 'Call ended by user' }),
         },
       }).catch(() => {});
-    }
 
-    // Create WebhookEvent for audit trail
-    if (callLog) {
+      // Create WebhookEvent for audit trail
       prisma.webhookEvent.create({
         data: {
           callLogId: callLog.id,
@@ -237,56 +232,55 @@ router.post('/:sessionId/end', async (req: Request, res: Response) => {
       }).catch(() => {});
     }
 
-    // Fetch or create ConversationSummary
+    // Create conversation summary
     let summaryData: ConversationSummaryData | null = null;
     if (callLog) {
-      const fullData = await prisma.callLog.findFirst({
-        where: { sessionId },
-        include: { conversationSummary: true, patient: { select: { name: true } } },
-      }).catch(() => null);
+      let aptSummary = '';
+      try {
+        const appt = await prisma.appointment.findFirst({
+          where: { callLogId: callLog.id },
+          include: { doctor: { select: { name: true } }, branch: { select: { name: true } } },
+        });
+        if (appt) {
+          const dateStr = appt.date.toISOString().split('T')[0];
+          aptSummary = `Appointment booked with Dr. ${appt.doctor.name} at ${appt.branch.name} on ${dateStr} at ${appt.time}.`;
+        }
+      } catch { /* ignore */ }
 
-      if (fullData?.conversationSummary) {
-        const cs = fullData.conversationSummary;
-        summaryData = {
-          patientName: cs.patientName,
-          intent: cs.intent,
-          doctor: cs.doctor,
-          department: cs.department,
-          branch: cs.branch,
-          appointmentTime: cs.appointmentTime,
-          outcome: cs.outcome,
-          callDuration: cs.callDuration,
-          summary: cs.summary,
-        };
-      } else {
-        // Try to populate from appointment data if available
-        let aptSummary = '';
-        try {
-          const appt = await prisma.appointment.findFirst({
-            where: { callLogId: callLog.id },
-            include: { doctor: { select: { name: true } }, branch: { select: { name: true } } },
-          });
-          if (appt) {
-            const dateStr = appt.date.toISOString().split('T')[0];
-            aptSummary = `Appointment booked with Dr. ${appt.doctor.name} at ${appt.branch.name} on ${dateStr} at ${appt.time}.`;
-          }
-        } catch { /* ignore */ }
+      const minimalSummary = {
+        callLogId: callLog.id,
+        patientId: callLog.patientId || undefined,
+        patientName: session.phone || null,
+        outcome: 'completed',
+        callDuration: duration,
+        summary: aptSummary || 'Call ended by user.',
+      };
 
-        const minimalSummary = {
-          callLogId: callLog.id,
-          patientId: callLog.patientId || undefined,
-          patientName: fullData?.patient?.name || null,
-          callDuration: duration,
-          outcome: 'completed',
-          summary: aptSummary || 'Call ended by user before summary was generated.',
-        };
-        await prisma.conversationSummary.create({ data: minimalSummary }).catch(() => {});
-        summaryData = {
-          patientName: minimalSummary.patientName,
-          outcome: 'completed',
-          callDuration: duration,
-          summary: minimalSummary.summary,
-        };
+      try {
+        const existingSummary = await prisma.conversationSummary.findUnique({ where: { callLogId: callLog.id } });
+        if (existingSummary) {
+          summaryData = {
+            patientName: existingSummary.patientName,
+            intent: existingSummary.intent,
+            doctor: existingSummary.doctor,
+            department: existingSummary.department,
+            branch: existingSummary.branch,
+            appointmentTime: existingSummary.appointmentTime,
+            outcome: existingSummary.outcome || 'completed',
+            callDuration: existingSummary.callDuration || duration,
+            summary: existingSummary.summary,
+          };
+        } else {
+          await prisma.conversationSummary.create({ data: minimalSummary });
+          summaryData = {
+            patientName: minimalSummary.patientName,
+            outcome: 'completed',
+            callDuration: duration,
+            summary: minimalSummary.summary,
+          };
+        }
+      } catch (err) {
+        logger.error('VoiceCall.end', 'Failed to save conversation summary', { error: String(err), sessionId });
       }
     }
 

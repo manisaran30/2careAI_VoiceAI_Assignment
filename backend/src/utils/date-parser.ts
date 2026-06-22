@@ -1,19 +1,19 @@
 export function parseNaturalDate(text: string): { date: string; error?: string } {
   const lower = text.toLowerCase().trim();
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setUTCHours(0, 0, 0, 0);
 
   // "tomorrow"
   if (lower === 'tomorrow') {
     const d = new Date(today);
-    d.setDate(d.getDate() + 1);
+    d.setUTCDate(d.getUTCDate() + 1);
     return { date: d.toISOString().split('T')[0] };
   }
 
   // "day after tomorrow"
   if (lower === 'day after tomorrow') {
     const d = new Date(today);
-    d.setDate(d.getDate() + 2);
+    d.setUTCDate(d.getUTCDate() + 2);
     return { date: d.toISOString().split('T')[0] };
   }
 
@@ -25,11 +25,11 @@ export function parseNaturalDate(text: string): { date: string; error?: string }
   const nextMatch = lower.match(/^next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/);
   if (nextMatch) {
     const targetDay = dayNames[nextMatch[1]];
-    const currentDay = today.getDay();
+    const currentDay = today.getUTCDay();
     let daysUntil = targetDay - currentDay;
     if (daysUntil <= 0) daysUntil += 7;
     const d = new Date(today);
-    d.setDate(d.getDate() + daysUntil);
+    d.setUTCDate(d.getUTCDate() + daysUntil);
     return { date: d.toISOString().split('T')[0] };
   }
 
@@ -37,11 +37,11 @@ export function parseNaturalDate(text: string): { date: string; error?: string }
   const thisMatch = lower.match(/^this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/);
   if (thisMatch) {
     const targetDay = dayNames[thisMatch[1]];
-    const currentDay = today.getDay();
+    const currentDay = today.getUTCDay();
     let daysUntil = targetDay - currentDay;
     if (daysUntil < 0) daysUntil += 7;
     const d = new Date(today);
-    d.setDate(d.getDate() + daysUntil);
+    d.setUTCDate(d.getUTCDate() + daysUntil);
     return { date: d.toISOString().split('T')[0] };
   }
 
@@ -49,11 +49,11 @@ export function parseNaturalDate(text: string): { date: string; error?: string }
   const dayMatch = lower.match(/^(monday|tuesday|wednesday|thursday|friday|saturday|sunday)$/);
   if (dayMatch) {
     const targetDay = dayNames[dayMatch[1]];
-    const currentDay = today.getDay();
+    const currentDay = today.getUTCDay();
     let daysUntil = targetDay - currentDay;
     if (daysUntil <= 0) daysUntil += 7;
     const d = new Date(today);
-    d.setDate(d.getDate() + daysUntil);
+    d.setUTCDate(d.getUTCDate() + daysUntil);
     return { date: d.toISOString().split('T')[0] };
   }
 
@@ -106,7 +106,7 @@ export function parseNaturalDate(text: string): { date: string; error?: string }
   if (inMatch) {
     const days = parseInt(inMatch[1]);
     const d = new Date(today);
-    d.setDate(d.getDate() + days);
+    d.setUTCDate(d.getUTCDate() + days);
     return { date: d.toISOString().split('T')[0] };
   }
 

@@ -26,15 +26,15 @@ router.post('/voice-book', async (req: Request, res: Response) => {
 
     await ensureTableExists();
 
-    const dateObj = new Date(date);
+    const dateObj = new Date(date + 'T00:00:00.000Z');
     if (isNaN(dateObj.getTime())) {
       return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD.' });
     }
 
     const startDate = new Date(dateObj);
-    startDate.setHours(0, 0, 0, 0);
+    startDate.setUTCHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
 
     // Find or create patient
     let patient;

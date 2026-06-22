@@ -75,18 +75,19 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
   res.status(500).json({ error: 'Something went wrong. Please try again.' });
 });
 
-// Periodic cleanup: mark sessions stuck in active/connecting for >5min as incomplete
-const CLEANUP_INTERVAL = 60_000;
-const STALE_THRESHOLD = 5 * 60_000;
+// Periodic cleanup: mark sessions stuck in active/connecting for >15min as incomplete
+// Increased from 5min to avoid race conditions with Bolna webhook delivery delays
+const CLEANUP_INTERVAL = 120_000;
+const STALE_THRESHOLD = 15 * 60_000;
 setInterval(async () => {
   try {
-    // Clean in-memory stale sessions
+    // Clean in-memory stale sessions (only terminal sessions older than 60min)
     const cleaned = sessionManager.cleanup();
     if (cleaned > 0) {
       logger.info('SessionCleanup', `Cleaned ${cleaned} stale sessions from memory`);
     }
 
-    // Mark DB sessions stuck in active/connecting for >5min as incomplete
+    // Mark DB sessions stuck in active/connecting for >15min as incomplete
     const cutoff = new Date(Date.now() - STALE_THRESHOLD);
     const stale = await prisma.callLog.updateMany({
       where: {
@@ -97,29 +98,6 @@ setInterval(async () => {
     });
     if (stale.count > 0) {
       logger.info('SessionCleanup', `Marked ${stale.count} stale DB sessions as incomplete`);
-
-      // Also disconnect in-memory sessions that match stale records
-      const staleRecords = await prisma.callLog.findMany({
-        where: {
-          status: 'incomplete',
-          partialSession: true,
-          updatedAt: { lt: cutoff },
-        },
-        select: { sessionId: true },
-      });
-      for (const record of staleRecords) {
-        if (!record.sessionId) continue;
-        try {
-          const s = sessionManager.getSession(record.sessionId);
-          if (s && !['completed', 'disconnected', 'idle'].includes(s.state)) {
-            sessionManager.transition(record.sessionId, 'disconnected', {
-              terminationReason: 'stale_timeout',
-            });
-          }
-        } catch {
-          // ignore
-        }
-      }
     }
   } catch (err) {
     logger.error('SessionCleanup', 'Cleanup failed', { error: String(err) });

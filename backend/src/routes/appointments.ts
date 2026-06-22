@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma';
 import { logger } from '../logger';
+import { ensureTableExists, SLOT_TIMES } from './slots';
 
 const router = Router();
 
@@ -28,10 +29,9 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     if (date) {
-      const startDate = new Date(date as string);
-      startDate.setHours(0, 0, 0, 0);
+      const startDate = new Date(date as string + 'T00:00:00.000Z');
       const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 1);
+      endDate.setUTCDate(endDate.getUTCDate() + 1);
       where.date = { gte: startDate, lt: endDate };
     }
 
@@ -80,21 +80,12 @@ router.get('/slots', async (req: Request, res: Response) => {
       return res.json({ success: true, data: [], message: 'Doctor not available on this day' });
     }
 
-    // Define standard slot generation (assuming 9 AM to 5 PM with 30-min slots)
-    // In production, this would come from doctor's schedule
-    const allSlots: string[] = [];
-    const startHour = 9;
-    const endHour = 17;
-    for (let h = startHour; h < endHour; h++) {
-      allSlots.push(`${h.toString().padStart(2, '0')}:00`);
-      allSlots.push(`${h.toString().padStart(2, '0')}:30`);
-    }
+    const allSlots: string[] = [...SLOT_TIMES];
 
     // Fetch booked appointments for this doctor on this date
-    const startDate = new Date(date as string);
-    startDate.setHours(0, 0, 0, 0);
+    const startDate = new Date(date as string + 'T00:00:00.000Z');
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
 
     const bookedAppointments = await prisma.appointment.findMany({
       where: {
@@ -124,12 +115,13 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'patientId, doctorId, branchId, date, and time are required' });
     }
 
-    // Check slot availability via AppointmentSlot
-    const dateObj = new Date(date);
+    const dateObj = new Date(date as string + 'T00:00:00.000Z');
     const startDate = new Date(dateObj);
-    startDate.setHours(0, 0, 0, 0);
+    startDate.setUTCHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
+
+    await ensureTableExists();
 
     // Find an available slot in the database
     const slot = await prisma.appointmentSlot.findFirst({
@@ -214,12 +206,11 @@ router.patch('/:id/reschedule', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Cannot reschedule a cancelled appointment' });
     }
 
-    // Check slot availability
-    const dateObj = new Date(date);
+    const dateObj = new Date(date as string + 'T00:00:00.000Z');
     const startDate = new Date(dateObj);
-    startDate.setHours(0, 0, 0, 0);
+    startDate.setUTCHours(0, 0, 0, 0);
     const endDate = new Date(startDate);
-    endDate.setDate(endDate.getDate() + 1);
+    endDate.setUTCDate(endDate.getUTCDate() + 1);
 
     const existing = await prisma.appointment.findFirst({
       where: {

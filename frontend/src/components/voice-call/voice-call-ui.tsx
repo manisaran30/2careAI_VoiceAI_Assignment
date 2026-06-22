@@ -51,8 +51,7 @@ export function VoiceCallUI() {
   const showTimer =
     session.phase === "connected" ||
     session.phase === "ai_speaking" ||
-    session.phase === "user_speaking" ||
-    session.phase === "processing"
+    session.phase === "user_speaking"
 
   return (
     <div className="max-w-lg mx-auto space-y-4">

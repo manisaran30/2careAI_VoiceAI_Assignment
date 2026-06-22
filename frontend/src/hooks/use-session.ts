@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react"
 import { sessionStore, type SessionState } from "@/lib/call-session-store"
 import { useCallSSE } from "./use-call-sse"
 import { useCallTimer } from "./use-call-timer"
@@ -36,6 +36,58 @@ export function useSession() {
     sessionId,
     enabled: phase === "connecting" || phase === "connected" || phase === "ai_speaking" || phase === "user_speaking" || phase === "processing" || phase === "ending",
   })
+
+  // Polling fallback: periodically check session status when in an active phase
+  // This ensures the frontend auto-terminates even if SSE events are missed
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  useEffect(() => {
+    const activePhases = ["connecting", "connected", "ai_speaking", "user_speaking", "processing", "ending"]
+    if (!sessionId || !activePhases.includes(phase)) {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+      return
+    }
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await api.voiceCall.get(sessionId)
+        const callLog = res.data
+        if (!callLog) return
+
+        const terminalStatuses = ["completed", "failed", "missed", "incomplete"]
+        if (terminalStatuses.includes(callLog.status)) {
+          const currentPhase = sessionStore.getState().phase
+          if (currentPhase !== "completed" && currentPhase !== "disconnected") {
+            const summary = callLog.conversationSummary
+            sessionStore.actions.setCompleted({
+              summary: summary || undefined,
+              outcome: summary?.outcome || callLog.status || "completed",
+              terminationReason: "agent_ended",
+              appointments: (callLog.appointments || []).map((a: any) => ({
+                id: a.id,
+                doctor: a.doctor,
+                branch: a.branch,
+                date: a.date,
+                time: a.time,
+                status: a.status,
+              })),
+            })
+          }
+        }
+      } catch {
+        // Polling failed — SSE should handle it
+      }
+    }, 5000)
+
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+        pollIntervalRef.current = null
+      }
+    }
+  }, [sessionId, phase])
 
   // Timer driven by connected phases
   const { formatted: timerFormatted, isRunning: timerRunning } = useCallTimer()
@@ -74,7 +126,7 @@ export function useSession() {
     try {
       await api.voiceCall.end(sid)
     } catch {
-      // API error — SSE event or local fallback will handle completion
+      // API error — SSE event or polling fallback will handle completion
     }
 
     // If SSE hasn't already transitioned to completed, do it locally

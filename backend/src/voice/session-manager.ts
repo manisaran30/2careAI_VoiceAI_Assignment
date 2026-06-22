@@ -406,7 +406,7 @@ class SessionManager {
 
   cleanup(): number {
     const now = Date.now();
-    const STALE_TIMEOUT = 30 * 60 * 1000;
+    const STALE_TIMEOUT = 60 * 60 * 1000; // 60 min (was 30)
     let cleaned = 0;
 
     for (const [id, session] of this.sessions) {
