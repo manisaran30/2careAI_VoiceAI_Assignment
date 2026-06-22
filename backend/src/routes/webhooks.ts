@@ -39,13 +39,12 @@ router.post('/bolna', async (req: Request, res: Response) => {
     const loggerCtx = 'Webhooks.unified';
 
     // Normalize various Bolna payload formats
+    // Only map body.id → callId to avoid misrouting call-started to call-completed
     if (!body.callId && !body.execution_id && body.id) {
       body.callId = body.id;
       logger.info(loggerCtx, 'Normalized: mapped body.id → callId', { callId: body.id });
     }
-    if (body.duration === undefined && body.conversation_duration !== undefined) {
-      body.duration = body.conversation_duration;
-    }
+    // Extract sessionId from context_details if not at top level
     if (!body.sessionId && body.context_details?.recipient_data?.sessionId) {
       body.sessionId = body.context_details.recipient_data.sessionId;
     }
@@ -171,11 +170,14 @@ async function handleCallStarted(req: Request, res: Response) {
 }
 
 async function handleCallCompleted(req: Request, res: Response) {
-  const { callId, duration, intent, summary, patientName, doctor, department, branch, appointmentTime, outcome, sessionId: bodySessionId } = req.body;
+  const { callId, duration, intent, summary, patientName, doctor, department, branch, appointmentTime, outcome, sessionId: bodySessionId, conversation_duration } = req.body;
 
   if (!callId) {
     return res.status(400).json({ error: 'callId is required' });
   }
+
+  // Bolna sometimes sends duration as conversation_duration
+  const resolvedDuration = duration ?? conversation_duration ?? null;
 
   const extracted = req.body.extracted_data;
   const subjectiveSummary = extracted?.General?.['Call Summary']?.subjective || null;
@@ -189,7 +191,7 @@ async function handleCallCompleted(req: Request, res: Response) {
     callLog = await prisma.callLog.create({
       data: {
         callId, sessionId: bodySessionId || callId, phone: req.body.phone || 'unknown',
-        direction: 'inbound', status: 'completed', duration: duration || null,
+        direction: 'inbound', status: 'completed', duration: resolvedDuration,
         intent: intent || null, summary: callSummary,
       },
     });
@@ -200,7 +202,7 @@ async function handleCallCompleted(req: Request, res: Response) {
   await withRetry(() =>
     prisma.callLog.update({
       where: { callId },
-      data: { status: 'completed', duration: duration || null, intent: intent || null, summary: callSummary },
+      data: { status: 'completed', duration: resolvedDuration, intent: intent || null, summary: callSummary },
     }), 'Webhooks.call-completed'
   ).catch(() => {});
 
@@ -226,7 +228,7 @@ async function handleCallCompleted(req: Request, res: Response) {
     callLogId: callLog.id, patientId: callLog.patientId || undefined, patientName: patientName || null,
     intent: resolvedIntent, doctor: doctor || appointmentDoctor || null, department: department || null,
     branch: branch || appointmentBranch || null, appointmentTime: appointmentTime || appointmentTimeStr || null,
-    outcome: resolvedOutcome, callDuration: duration || null, summary: callSummary,
+    outcome: resolvedOutcome, callDuration: resolvedDuration, summary: callSummary,
   };
 
   try {
@@ -242,7 +244,7 @@ async function handleCallCompleted(req: Request, res: Response) {
 
   await Promise.all([
     prisma.webhookEvent.create({ data: { callLogId: callLog.id, eventType: 'call_completed', payload: JSON.stringify(req.body), processed: true } }),
-    prisma.callEvent.create({ data: { sessionId: logSessionId, callLogId: callLog.id, eventType: 'status_update', payload: JSON.stringify({ status: 'completed', duration, message: 'Call completed' }) } }),
+    prisma.callEvent.create({ data: { sessionId: logSessionId, callLogId: callLog.id, eventType: 'status_update', payload: JSON.stringify({ status: 'completed', duration: resolvedDuration, message: 'Call completed' }) } }),
   ]).catch(() => {});
 
   const session = sessionManager.getSession(logSessionId);
@@ -253,7 +255,7 @@ async function handleCallCompleted(req: Request, res: Response) {
     }
     sessionManager.transition(logSessionId, 'completed', {
       endTime: Date.now(), terminationReason: 'agent_ended',
-      summary: { patientName: patientName || null, intent: intent || null, doctor: doctor || null, department: department || null, branch: branch || null, appointmentTime: appointmentTime || null, outcome: outcome || null, callDuration: duration || null, summary: callSummary },
+      summary: { patientName: patientName || null, intent: intent || null, doctor: doctor || null, department: department || null, branch: branch || null, appointmentTime: appointmentTime || null, outcome: outcome || null, callDuration: resolvedDuration, summary: callSummary },
     });
   } else {
     broadcastToSession(logSessionId, 'call.completed', { sessionId: logSessionId, state: 'completed', terminationReason: 'agent_ended', summary: summaryData });
@@ -264,12 +266,13 @@ async function handleCallCompleted(req: Request, res: Response) {
 }
 
 async function handleExecutionUpdate(req: Request, res: Response) {
-  const { execution_id, status, call_id, duration, summary, intent, patientName, doctor, department, branch, appointmentTime, outcome, sessionId: bodySessionId } = req.body;
+  const { execution_id, status, call_id, duration, summary, intent, patientName, doctor, department, branch, appointmentTime, outcome, sessionId: bodySessionId, conversation_duration } = req.body;
   if (!execution_id) {
     return res.status(400).json({ error: 'execution_id is required' });
   }
 
   const callId = call_id || execution_id;
+  const resolvedDuration = duration ?? conversation_duration ?? null;
   let callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
   if (!callLog && bodySessionId) {
     callLog = await prisma.callLog.findFirst({ where: { sessionId: bodySessionId } }).catch(() => null);
@@ -303,7 +306,7 @@ async function handleExecutionUpdate(req: Request, res: Response) {
     const mappedStatus = status === 'in-progress' ? 'active' : status === 'completed' ? 'completed' : status === 'failed' ? 'failed' : status === 'queued' ? 'connecting' : status;
     await prisma.callLog.update({
       where: { id: callLog.id },
-      data: { status: mappedStatus, ...(status === 'completed' && duration ? { duration } : {}) },
+      data: { status: mappedStatus, ...(status === 'completed' && resolvedDuration ? { duration: resolvedDuration } : {}) },
     });
 
     // When execution completes, create or update conversation summary
@@ -334,7 +337,7 @@ async function handleExecutionUpdate(req: Request, res: Response) {
         branch: branch || appointmentBranch || null,
         appointmentTime: appointmentTime || appointmentTimeStr || null,
         outcome: resolvedOutcome,
-        callDuration: duration || null,
+        callDuration: resolvedDuration,
         summary: summary || null,
       };
 
@@ -361,7 +364,7 @@ async function handleExecutionUpdate(req: Request, res: Response) {
       patientId: callLog.patientId || undefined,
       intent: intent || null,
       outcome: outcome || 'completed',
-      callDuration: duration || null,
+      callDuration: resolvedDuration,
     } : undefined;
     broadcastToSession(logSessionId, 'call.completed', {
       sessionId: logSessionId,
