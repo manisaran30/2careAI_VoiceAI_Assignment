@@ -86,6 +86,12 @@ router.post('/initiate', async (req: Request, res: Response) => {
 
       const result = await provider.initiateCall(callParams);
 
+      // Set executionId on session FIRST (in-memory, synchronous)
+      // This ensures resolveSessionId() can find it if Bolna webhook arrives during DB update
+      sessionManager.transition(sessionId, 'connected', {
+        executionId: result.executionId,
+      });
+
       await withRetry(() =>
         prisma.callLog.update({
           where: { id: callLog.id },
@@ -102,10 +108,6 @@ router.post('/initiate', async (req: Request, res: Response) => {
           payload: JSON.stringify({ status: 'active', message: 'Call connected' }),
         },
       }).catch(() => {});
-
-      sessionManager.transition(sessionId, 'connected', {
-        executionId: result.executionId,
-      });
 
       logger.info('VoiceCall.initiate', `Call active for session ${sessionId}`, {
         executionId: result.executionId,

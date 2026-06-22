@@ -113,10 +113,19 @@ async function handleCallStarted(req: Request, res: Response) {
 
   let callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
 
+  if (!callLog) {
+    // Maybe the initiate flow created a callLog with a different callId (sessionId as callId)
+    // Try finding by sessionId from the session manager
+    const existingSession = sessionManager.getSession(logSessionId);
+    if (existingSession?.callLogId) {
+      callLog = await prisma.callLog.findUnique({ where: { id: existingSession.callLogId } }).catch(() => null);
+    }
+  }
+
   if (callLog) {
     callLog = await prisma.callLog.update({
-      where: { callId },
-      data: { status: 'active', sessionId: logSessionId },
+      where: { id: callLog.id },
+      data: { status: 'active', sessionId: logSessionId, callId },
     });
   } else {
     callLog = await prisma.callLog.create({
@@ -173,6 +182,9 @@ async function handleCallCompleted(req: Request, res: Response) {
   const callSummary = subjectiveSummary || summary || null;
 
   let callLog = await prisma.callLog.findUnique({ where: { callId } });
+  if (!callLog && bodySessionId) {
+    callLog = await prisma.callLog.findFirst({ where: { sessionId: bodySessionId } });
+  }
   if (!callLog) {
     callLog = await prisma.callLog.create({
       data: {
@@ -258,7 +270,10 @@ async function handleExecutionUpdate(req: Request, res: Response) {
   }
 
   const callId = call_id || execution_id;
-  const callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
+  let callLog = await prisma.callLog.findUnique({ where: { callId } }).catch(() => null);
+  if (!callLog && bodySessionId) {
+    callLog = await prisma.callLog.findFirst({ where: { sessionId: bodySessionId } }).catch(() => null);
+  }
   const logSessionId = bodySessionId || callLog?.sessionId || callId;
 
   const session = sessionManager.getSession(logSessionId);
